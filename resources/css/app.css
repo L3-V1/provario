@@ -1,0 +1,40 @@
+@import 'tailwindcss';
+@import 'primeicons/primeicons.css';
+
+@plugin 'tailwindcss-primeui';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+/* Layer order: PrimeVue's styled theme sits between Tailwind's base and
+   utilities so Tailwind utility classes always win over component styles.
+   Keep this in sync with the `cssLayer.order` option passed to PrimeVue. */
+@layer theme, base, primevue, components, utilities;
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    --font-sans:
+        'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
+        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+        'Noto Color Emoji';
+
+    --radius-lg: var(--radius);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-sm: calc(var(--radius) - 4px);
+}
+
+:root {
+    --radius: 0.5rem;
+}
+
+@layer base {
+    html,
+    body {
+        @apply bg-surface-0 text-surface-900 dark:bg-surface-950 dark:text-surface-0;
+    }
+
+    body {
+        min-height: 100vh;
+    }
+}
