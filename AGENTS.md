@@ -34,7 +34,7 @@ e imprimir. Ver [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md).
     - **Arquivo**: `docs/features/<slug-do-projeto>.md`
     - Faça perguntas ao usuário até ambos chegarem à um consenso sobre o que será implementado e como será implementado. Quando o escopo for definido, separe a proposta de desenvolvimento em "features".
 
-2. **Especificações:** 
+2. **Especificações:**
     - **Arquivo:** `docs/specs/<slug-da-feature>.md`
     - Inicie a implementação das features em sequência, começando pela definição das especificações para a mesma. Conduza uma nova rodada de perguntas para esclarecer todos os seus detalhes técnicos.
 
@@ -46,7 +46,7 @@ e imprimir. Ver [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md).
     - **Arquivo:** `docs/tasks/<slug-da-feature>.md`
     - Decomponha o plano de implementação em tarefas objetivas e verificáveis.
 
-5. **Implementação:** 
+5. **Implementação:**
     - Inicie o ciclo de implementação com base nas tarefas que foram definidas. Siga uma abordagem de TDD com a técnica de RED-GREEN-REFACTOR. Registre o progresso da realização das tarefas no arquivo que foi criado para elas
 
 ## Regra de Ouro

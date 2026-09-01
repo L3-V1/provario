@@ -26,7 +26,7 @@ Data gravada no banco: `2026-08-31 00:00:00`. O `Z` (UTC) e o deslocamento de
 Dois pontos independentes:
 
 1. **Backend.** `config('app.timezone')` só afeta funções de data do PHP e a
-   hora em que o Carbon interpreta valores *sem* fuso. Não muda a
+   hora em que o Carbon interpreta valores _sem_ fuso. Não muda a
    **serialização**: `Model::serializeDate()` sempre emite ISO-8601 em UTC
    (`Y-m-d\TH:i:s.u\Z`). Como o Carbon nasce em `America/Sao_Paulo` à
    meia-noite, ao converter para UTC vira `03:00Z`.

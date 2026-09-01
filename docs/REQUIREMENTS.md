@@ -38,12 +38,14 @@ Tailwind, com PrimeVue 4).
 ## 3. Fluxo detalhado (wizard em etapas)
 
 ### Passo 1 — Configuração
+
 - Matéria (select fechado): Português, Matemática, Ciências, História,
   Geografia, Arte, Inglês, Educação Física, Ensino Religioso.
 - Ano (select fechado): 1º ao 9º ano do ensino fundamental.
 - Quantidade de questões (numérico).
 
 ### Passo 2 — Prompt
+
 - Sistema monta o texto do prompt a partir de um template fixo, com base nas
   variáveis do Passo 1.
 - Exibido em textarea somente leitura, com botão "Copiar prompt"
@@ -54,6 +56,7 @@ Tailwind, com PrimeVue 4).
   seção 6, incluindo o gabarito.
 
 ### Passo 3 — Conteúdo e cabeçalho
+
 - Professor cola o markdown retornado pela I.A em um textarea.
 - Pode selecionar um perfil institucional salvo, que pré-preenche os campos
   de cabeçalho — editar os campos no formulário **não** altera o perfil
@@ -62,6 +65,7 @@ Tailwind, com PrimeVue 4).
 - Escolhe layout de impressão em 1 ou 2 colunas.
 
 ### Passo 4 — Pré-visualização e impressão
+
 - Preview em folha A4, montado a partir do parse do markdown colado.
 - Gabarito é **sempre** impresso, como última página, separado por quebra de
   página.

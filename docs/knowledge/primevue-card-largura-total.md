@@ -29,9 +29,9 @@ Duas coisas:
 
 - `class="w-full"` explícito em **todo** `<Card>` de página:
 
-  ```vue
-  <Card class="w-full"> ... </Card>
-  ```
+    ```vue
+    <Card class="w-full"> ... </Card>
+    ```
 
 - Remover `max-w-*` de wrappers de página que devem ocupar a largura toda; o
   limite de largura da área de conteúdo já vem do `AppLayout`

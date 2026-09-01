@@ -31,15 +31,15 @@ Não é bug; é padrão não aplicado. Dois detalhes não-óbvios do PrimeVue:
 
 Convenção de ícones contextuais nos botões:
 
-| Ação | Ícone |
-|---|---|
-| Salvar / criar / editar (submit) | `pi pi-save` |
-| Atualizar senha | `pi pi-key` |
-| Excluir (conta, registro) | `pi pi-trash` |
-| Atualizar responsável | `pi pi-user` |
-| Confirmar baixa | `pi pi-ban` |
-| Cancelar (em modal) | `pi pi-times` |
-| Novo X (lista) | `pi pi-plus` |
+| Ação                             | Ícone         |
+| -------------------------------- | ------------- |
+| Salvar / criar / editar (submit) | `pi pi-save`  |
+| Atualizar senha                  | `pi pi-key`   |
+| Excluir (conta, registro)        | `pi pi-trash` |
+| Atualizar responsável            | `pi pi-user`  |
+| Confirmar baixa                  | `pi pi-ban`   |
+| Cancelar (em modal)              | `pi pi-times` |
+| Novo X (lista)                   | `pi pi-plus`  |
 
 Modais de confirmação de exclusão — padrão único, espelhando o de exclusão de
 conta:

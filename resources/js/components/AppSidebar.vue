@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { Building2, LayoutGrid, UserRound } from '@lucide/vue';
+import { Building2, FileText, LayoutGrid, UserRound } from '@lucide/vue';
 import { computed } from 'vue';
 import { route } from 'ziggy-js';
 import AppLogo from '@/components/AppLogo.vue';
@@ -27,6 +27,12 @@ const items = computed<NavItem[]>(() => {
             href: route('perfis.index'),
             icon: Building2,
             active: route().current('perfis.*'),
+        },
+        {
+            label: 'Criar prova',
+            href: route('prova.criar'),
+            icon: FileText,
+            active: route().current('prova.*'),
         },
         {
             label: 'Perfil',

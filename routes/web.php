@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PerfilInstitucionalController;
+use App\Http\Controllers\ProvaController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -27,6 +28,9 @@ Route::middleware(['auth'])->group(function () {
         ->name('perfis.update');
     Route::delete('perfis/{perfil}', [PerfilInstitucionalController::class, 'destroy'])
         ->name('perfis.destroy');
+
+    Route::get('prova/criar', ProvaController::class)
+        ->name('prova.criar');
 
     require __DIR__.'/settings.php';
 });
