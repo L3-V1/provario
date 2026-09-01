@@ -1,6 +1,6 @@
 # Especificação — Feature 2: Wizard de criação de prova
 
-Slug: `wizard-criacao-prova`. Deriva de [../features/provario.md](../features/provario.md)
+Slug: `wizard-criacao-prova`. Deriva de [../constitution/provario.md](../constitution/provario.md)
 (Feature 2) e [../REQUIREMENTS.md](../REQUIREMENTS.md) (seções 1, 2, 3, 4, 6, 8).
 As decisões abaixo vieram das rodadas de perguntas; nada foi inventado.
 

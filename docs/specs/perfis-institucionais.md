@@ -1,6 +1,6 @@
 # Especificação — Feature 1: Perfis institucionais
 
-Slug: `perfis-institucionais`. Deriva de [../features/provario.md](../features/provario.md)
+Slug: `perfis-institucionais`. Deriva de [../constitution/provario.md](../constitution/provario.md)
 e [../REQUIREMENTS.md](../REQUIREMENTS.md) (seções 2, 7). Decisões abaixo vieram
 da rodada de perguntas; nada foi inventado.
 
