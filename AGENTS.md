@@ -5,7 +5,7 @@
 Aplicação web para professores do ensino fundamental elaborarem provas com apoio
 de I.A.: o sistema gera um prompt para colar num chat de I.A., recebe o retorno
 em markdown, monta a prova a partir de um template de impressão e permite salvar
-e imprimir. Ver [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md).
+e imprimir. Ver [docs/constitution/provario.md](docs/constitution/provario.md).
 
 ## Metodologia de Desenvolvimento
 
@@ -214,7 +214,7 @@ Antes de avançar para a próxima etapa, confirmar:
 
 ## Documentação adicional
 
-- [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) — requisitos do MVP
+- [docs/constitution/provario.md](docs/constitution/provario.md) — constituição do projeto (visão, princípios, escopo, features)
 - [docs/knowledge/INDEX.md](docs/knowledge/INDEX.md) — base de conhecimento (problemas resolvidos)
 
 ## Comandos

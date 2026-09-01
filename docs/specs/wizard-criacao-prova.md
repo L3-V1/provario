@@ -1,8 +1,9 @@
 # Especificação — Feature 2: Wizard de criação de prova
 
 Slug: `wizard-criacao-prova`. Deriva de [../constitution/provario.md](../constitution/provario.md)
-(Feature 2) e [../REQUIREMENTS.md](../REQUIREMENTS.md) (seções 1, 2, 3, 4, 6, 8).
-As decisões abaixo vieram das rodadas de perguntas; nada foi inventado.
+(feature `wizard-criacao-prova`, "Contrato de formato do markdown",
+"Tratamento de erro de parsing"). As decisões abaixo vieram das rodadas de
+perguntas; nada foi inventado.
 
 ## 1. Decisões da entrevista técnica
 
