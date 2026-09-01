@@ -7,6 +7,7 @@ export const primeVuePtBr = {
     reject: 'Não',
     choose: 'Escolher',
     upload: 'Enviar',
+    noFileChosenMessage: 'Nenhum arquivo selecionado',
     cancel: 'Cancelar',
     clear: 'Limpar',
     apply: 'Aplicar',
