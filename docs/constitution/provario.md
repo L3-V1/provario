@@ -88,12 +88,12 @@ já existente no template. Sem papéis/permissões.
 
 ## Features do projeto
 
-| Slug | Descrição | Prioridade | Status |
-|------|-----------|------------|--------|
-| `perfis-institucionais` | CRUD de perfis institucionais (única entidade persistida) | Alta | Concluída |
-| `wizard-criacao-prova` | Wizard de 4 passos; rascunho em localStorage; preview mínimo até o parser entrar | Alta | Concluída |
-| `parser-markdown` | Parser TypeScript do contrato de markdown, com Vitest; integra ao passo 4 | Alta | Pendente |
-| `template-impressao` | Folha A4 para impressão via navegador, alimentada pelo parser | Alta | Pendente |
+| Slug                    | Descrição                                                                        | Prioridade | Status    |
+| ----------------------- | -------------------------------------------------------------------------------- | ---------- | --------- |
+| `perfis-institucionais` | CRUD de perfis institucionais (única entidade persistida)                        | Alta       | Concluída |
+| `wizard-criacao-prova`  | Wizard de 4 passos; rascunho em localStorage; preview mínimo até o parser entrar | Alta       | Concluída |
+| `parser-markdown`       | Parser TypeScript do contrato de markdown, com Vitest; integra ao passo 4        | Alta       | Concluída |
+| `template-impressao`    | Folha A4 para impressão via navegador, alimentada pelo parser                    | Alta       | Pendente  |
 
 ### Decisões de escopo (entrevista)
 
@@ -133,10 +133,10 @@ Wizard de 4 passos. A prova **não** é persistida no servidor; o estado fica em
 `localStorage` e só é limpo quando o professor clica em "Nova prova".
 
 - **Passo 1 — Configuração:**
-  - Matéria (select fechado, 9 opções): Português, Matemática, Ciências,
-    História, Geografia, Arte, Inglês, Educação Física, Ensino Religioso.
-  - Ano (select fechado): 1º ao 9º ano do ensino fundamental.
-  - Quantidade de questões (numérico).
+    - Matéria (select fechado, 9 opções): Português, Matemática, Ciências,
+      História, Geografia, Arte, Inglês, Educação Física, Ensino Religioso.
+    - Ano (select fechado): 1º ao 9º ano do ensino fundamental.
+    - Quantidade de questões (numérico).
 - **Passo 2 — Prompt:** monta o texto a partir de template fixo com as
   variáveis do passo 1; textarea somente leitura; botão "Copiar prompt"
   (`navigator.clipboard`). O prompt exige o formato markdown estrito da seção

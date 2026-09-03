@@ -40,6 +40,7 @@ php artisan test        # só testes PHP
 npm run dev             # vite dev (vp dev)
 npm run build           # build de produção
 npm run types:check     # vue-tsc --noEmit
+npm run test            # vitest (parser)
 ```
 
 ## Metodologia de Desenvolvimento

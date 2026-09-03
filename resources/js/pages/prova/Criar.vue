@@ -131,6 +131,7 @@ function confirmarNovaProva() {
                     :cabecalho="rascunho.cabecalho"
                     :markdown="rascunho.conteudo.markdown"
                     :layout="rascunho.layout"
+                    :quantidade="rascunho.config.quantidade"
                 />
 
                 <div class="mt-6 flex justify-between">

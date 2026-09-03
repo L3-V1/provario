@@ -1,19 +1,41 @@
 <script setup lang="ts">
 import Message from 'primevue/message';
+import { computed } from 'vue';
 import type { CabecalhoProva, LayoutColunas } from '@/types/prova';
+import GabaritoPreview from '@/components/prova/GabaritoPreview.vue';
+import QuestaoPreview from '@/components/prova/QuestaoPreview.vue';
+import { parseProva } from '@/lib/parserProva';
 
 const props = defineProps<{
     cabecalho: CabecalhoProva;
     markdown: string;
     layout: LayoutColunas;
+    quantidade: number | null;
 }>();
+
+const temMarkdown = computed(() => props.markdown.trim().length > 0);
+
+const prova = computed(() =>
+    parseProva(props.markdown, { quantidadeEsperada: props.quantidade }),
+);
 </script>
 
 <template>
     <div class="flex flex-col gap-4">
         <Message severity="info" variant="simple">
-            Pré-visualização parcial: o markdown aparece como texto puro. A
-            prova formatada e a impressão chegam nas próximas etapas do projeto.
+            A folha A4 e a impressão chegam na próxima etapa do projeto.
+        </Message>
+
+        <Message
+            v-if="temMarkdown && prova.avisos.length"
+            severity="warn"
+            variant="simple"
+        >
+            <ul class="flex flex-col gap-1">
+                <li v-for="aviso in prova.avisos" :key="aviso.mensagem">
+                    {{ aviso.mensagem }}
+                </li>
+            </ul>
         </Message>
 
         <div
@@ -67,14 +89,34 @@ const props = defineProps<{
                 <div>Nota: ____________</div>
             </dl>
 
-            <pre
-                class="text-sm whitespace-pre-wrap"
-                :style="
-                    props.layout === 2
-                        ? 'column-count: 2; column-gap: 2rem;'
-                        : ''
-                "
-                >{{ props.markdown || 'Nenhum markdown colado ainda.' }}</pre>
+            <p v-if="!temMarkdown" class="text-surface-500 text-sm">
+                Nenhum markdown colado ainda.
+            </p>
+
+            <template v-else>
+                <div
+                    class="flex flex-col gap-6"
+                    :style="
+                        props.layout === 2
+                            ? 'column-count: 2; column-gap: 2rem;'
+                            : ''
+                    "
+                >
+                    <QuestaoPreview
+                        v-for="questao in prova.questoes"
+                        :key="questao.numero"
+                        :questao="questao"
+                    />
+                </div>
+
+                <div
+                    v-if="prova.questoes.length"
+                    class="border-surface-200 dark:border-surface-700 mt-6 border-t pt-4"
+                >
+                    <p class="mb-2 font-semibold">Gabarito</p>
+                    <GabaritoPreview :questoes="prova.questoes" />
+                </div>
+            </template>
         </div>
     </div>
 </template>

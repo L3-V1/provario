@@ -44,6 +44,63 @@ export type CabecalhoProva = {
     valor_total: string;
 };
 
+/** Trecho de texto com formatação inline resolvida pelo parser. */
+export type SegmentoTexto = {
+    texto: string;
+    negrito?: boolean;
+    italico?: boolean;
+};
+
+/** Enunciado / texto de alternativa / afirmação, já segmentado. */
+export type TextoFormatado = SegmentoTexto[];
+
+export type LetraAlternativa = 'a' | 'b' | 'c' | 'd' | 'e';
+
+export type Alternativa = {
+    letra: LetraAlternativa;
+    texto: TextoFormatado;
+};
+
+export type QuestaoMultiplaEscolha = {
+    numero: number;
+    tipo: 'multipla-escolha';
+    enunciado: TextoFormatado;
+    alternativas: Alternativa[];
+    /** Letra correta do gabarito, ou null se ausente/irreconhecível. */
+    gabarito: LetraAlternativa | null;
+};
+
+export type AfirmacaoVF = {
+    numero: number; // numeração local (1, 2, 3...) dentro da questão
+    texto: TextoFormatado;
+    gabarito: 'V' | 'F' | null;
+};
+
+export type QuestaoVerdadeiroFalso = {
+    numero: number;
+    tipo: 'verdadeiro-falso';
+    enunciado: TextoFormatado;
+    afirmacoes: AfirmacaoVF[];
+};
+
+export type Questao = QuestaoMultiplaEscolha | QuestaoVerdadeiroFalso;
+
+export type AvisoParsing = {
+    codigo: string;
+    mensagem: string;
+    questao?: number; // número da questão referida, quando aplicável
+};
+
+export type ProvaParseada = {
+    questoes: Questao[];
+    avisos: AvisoParsing[];
+};
+
+export type OpcoesParse = {
+    /** Quantidade pedida no Passo 1; habilita o aviso QUANTIDADE_DIVERGENTE. */
+    quantidadeEsperada?: number | null;
+};
+
 export type RascunhoProva = {
     versao: 1;
     passoAtual: number;
