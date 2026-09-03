@@ -6,7 +6,7 @@ defineProps<{ questao: Questao }>();
 </script>
 
 <template>
-    <div class="flex break-inside-avoid flex-col gap-2">
+    <div class="folha-questao flex break-inside-avoid flex-col gap-2">
         <p class="font-semibold">Questão {{ questao.numero }}</p>
 
         <p class="text-sm">
@@ -15,7 +15,7 @@ defineProps<{ questao: Questao }>();
 
         <ol
             v-if="questao.tipo === 'multipla-escolha'"
-            class="flex flex-col gap-1 text-sm"
+            class="flex break-inside-avoid flex-col gap-1 text-sm"
         >
             <li
                 v-for="alternativa in questao.alternativas"
@@ -26,7 +26,7 @@ defineProps<{ questao: Questao }>();
             </li>
         </ol>
 
-        <ul v-else class="flex flex-col gap-1 text-sm">
+        <ul v-else class="flex break-inside-avoid flex-col gap-1 text-sm">
             <li v-for="afirmacao in questao.afirmacoes" :key="afirmacao.numero">
                 {{ afirmacao.numero }}. ( )
                 <TextoFormatado :segmentos="afirmacao.texto" />

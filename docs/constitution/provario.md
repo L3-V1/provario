@@ -93,7 +93,7 @@ já existente no template. Sem papéis/permissões.
 | `perfis-institucionais` | CRUD de perfis institucionais (única entidade persistida)                        | Alta       | Concluída |
 | `wizard-criacao-prova`  | Wizard de 4 passos; rascunho em localStorage; preview mínimo até o parser entrar | Alta       | Concluída |
 | `parser-markdown`       | Parser TypeScript do contrato de markdown, com Vitest; integra ao passo 4        | Alta       | Concluída |
-| `template-impressao`    | Folha A4 para impressão via navegador, alimentada pelo parser                    | Alta       | Pendente  |
+| `template-impressao`    | Folha A4 para impressão via navegador, alimentada pelo parser                    | Alta       | Concluída |
 
 ### Decisões de escopo (entrevista)
 
