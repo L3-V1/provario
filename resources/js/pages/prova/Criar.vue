@@ -4,7 +4,7 @@ import Button from 'primevue/button';
 import Card from 'primevue/card';
 import { useConfirm } from 'primevue/useconfirm';
 import { computed } from 'vue';
-import Breadcrumbs from '@/components/Breadcrumbs.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import PassoConfiguracao from '@/components/prova/PassoConfiguracao.vue';
 import PassoConteudo from '@/components/prova/PassoConteudo.vue';
 import PassoPreview from '@/components/prova/PassoPreview.vue';
@@ -80,7 +80,10 @@ function confirmarNovaProva() {
     <Head title="Criar prova" />
 
     <div class="space-y-4">
-        <Breadcrumbs :items="[{ label: 'Criar prova' }]" />
+        <PageHeader
+            title="Criar prova"
+            :breadcrumbs="[{ label: 'Criar prova' }]"
+        />
 
         <ol class="flex flex-wrap gap-2 text-sm">
             <li

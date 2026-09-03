@@ -1,5 +1,6 @@
 import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
+import { definePreset } from '@primevue/themes';
 import Aura from '@primevue/themes/aura';
 import PrimeVue from 'primevue/config';
 import ConfirmationService from 'primevue/confirmationservice';
@@ -13,6 +14,30 @@ import AuthLayout from '@/layouts/AuthLayout.vue';
 import { primeVuePtBr } from '@/lib/primevue-ptbr';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+
+// Botões `severity="secondary"` no tema light: o Aura stock resolve o fundo
+// para {surface.100}, contraste fraco demais sobre {surface.0}. Sobe um degrau.
+// Ver docs/knowledge/botao-secondary-tema-light.md
+const AppPreset = definePreset(Aura, {
+    components: {
+        button: {
+            colorScheme: {
+                light: {
+                    root: {
+                        secondary: {
+                            background: '{surface.200}',
+                            hoverBackground: '{surface.300}',
+                            activeBackground: '{surface.400}',
+                            borderColor: '{surface.200}',
+                            hoverBorderColor: '{surface.300}',
+                            activeBorderColor: '{surface.400}',
+                        },
+                    },
+                },
+            },
+        },
+    },
+});
 
 void createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
@@ -35,7 +60,7 @@ void createInertiaApp({
             .use(ZiggyVue)
             .use(PrimeVue, {
                 theme: {
-                    preset: Aura,
+                    preset: AppPreset,
                     options: {
                         darkModeSelector: '.dark',
                         cssLayer: {

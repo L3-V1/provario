@@ -10,8 +10,12 @@ export default defineConfig({
             input: ['resources/css/app.css', 'resources/js/app.ts'],
             refresh: true,
             fonts: [
-                bunny('Instrument Sans', {
+                bunny('Inter', {
                     weights: [400, 500, 600],
+                    // Preload apenas os pesos usados na primeira pintura;
+                    // 500 carrega sob demanda (display: swap). Evita os avisos
+                    // "preloaded ... was not used" do Firefox no dev server.
+                    preload: [{ weight: 400 }, { weight: 600 }],
                 }),
             ],
         }),

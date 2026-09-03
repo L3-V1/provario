@@ -5,7 +5,7 @@ import Column from 'primevue/column';
 import DataTable from 'primevue/datatable';
 import { useConfirm } from 'primevue/useconfirm';
 import { route } from 'ziggy-js';
-import Breadcrumbs from '@/components/Breadcrumbs.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import type { Perfil } from '@/types';
 
 defineProps<{ perfis: Perfil[] }>();
@@ -29,22 +29,27 @@ function confirmarExclusao(perfil: Perfil) {
     <Head title="Perfis institucionais" />
 
     <div class="space-y-4">
-        <Breadcrumbs :items="[{ label: 'Perfis institucionais' }]" />
-
-        <div class="flex items-center justify-between">
-            <h1 class="text-xl font-semibold">Perfis institucionais</h1>
-            <Button
-                label="Novo perfil"
-                icon="pi pi-plus"
-                :href="route('perfis.create')"
-                :as="Link"
-            />
-        </div>
+        <PageHeader
+            title="Perfis institucionais"
+            :breadcrumbs="[{ label: 'Perfis institucionais' }]"
+        >
+            <template #actions>
+                <Button
+                    label="Novo perfil"
+                    icon="pi pi-plus"
+                    :href="route('perfis.create')"
+                    :as="Link"
+                />
+            </template>
+        </PageHeader>
 
         <DataTable :value="perfis" data-key="id">
             <template #empty>
-                <div class="text-surface-500 py-6 text-center">
-                    Nenhum perfil cadastrado.
+                <div
+                    class="text-surface-500 flex flex-col items-center justify-center gap-2 py-10"
+                >
+                    <i class="pi pi-inbox text-2xl" />
+                    <span>Nenhum perfil cadastrado.</span>
                 </div>
             </template>
 

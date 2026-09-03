@@ -13,7 +13,7 @@ import Tabs from 'primevue/tabs';
 import { useConfirm } from 'primevue/useconfirm';
 import { computed } from 'vue';
 import { route } from 'ziggy-js';
-import Breadcrumbs from '@/components/Breadcrumbs.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import type { User } from '@/types';
 
 const user = computed(() => usePage().props.auth.user as User);
@@ -67,8 +67,10 @@ function confirmDelete() {
     <Head title="Perfil" />
 
     <div class="space-y-4">
-        <Breadcrumbs
-            :items="[{ label: 'Configurações' }, { label: 'Perfil' }]"
+        <PageHeader
+            title="Perfil"
+            subtitle="Atualize os dados da sua conta e a senha."
+            :breadcrumbs="[{ label: 'Configurações' }, { label: 'Perfil' }]"
         />
 
         <Tabs value="dados">

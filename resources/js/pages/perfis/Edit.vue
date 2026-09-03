@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, useForm } from '@inertiajs/vue3';
 import { route } from 'ziggy-js';
-import Breadcrumbs from '@/components/Breadcrumbs.vue';
+import PageHeader from '@/components/PageHeader.vue';
 import PerfilForm, { type PerfilFormData } from '@/components/PerfilForm.vue';
 import type { Perfil } from '@/types';
 
@@ -27,14 +27,13 @@ function submit() {
     <Head title="Editar perfil institucional" />
 
     <div class="space-y-4">
-        <Breadcrumbs
-            :items="[
+        <PageHeader
+            title="Editar perfil institucional"
+            :breadcrumbs="[
                 { label: 'Perfis institucionais', href: route('perfis.index') },
                 { label: 'Editar perfil' },
             ]"
         />
-
-        <h1 class="text-xl font-semibold">Editar perfil institucional</h1>
 
         <PerfilForm :perfil="perfil" :form="form" @submit="submit" />
     </div>
