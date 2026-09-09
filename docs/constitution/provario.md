@@ -5,6 +5,12 @@ requisitos e da entrevista de escopo. Todas as decisões abaixo foram
 respondidas pelo usuário; nada foi inventado. É a referência única para as
 etapas 2 a 5 (Spec → Plano → Tarefas → Implementação).
 
+Blueprint do projeto (criado retroativamente, alimenta esta constituição):
+
+- [`docs/blueprint/PROJECT.md`](../blueprint/PROJECT.md) — descrição completa do projeto
+- [`docs/blueprint/ARCHITECTURE.md`](../blueprint/ARCHITECTURE.md) — stack e padrões
+- [`docs/blueprint/DESIGN.md`](../blueprint/DESIGN.md) — linguagem visual
+
 ## Visão / Problema
 
 Aplicação web para professores do ensino fundamental elaborarem provas com
@@ -256,3 +262,6 @@ Nenhuma.
 - 2026-09-01 — Consolidação de `docs/REQUIREMENTS.md` neste arquivo e remoção
   do arquivo redundante. Sem mudança de escopo: apenas mescla do conteúdo de
   requisitos com a decomposição em features.
+- 2026-09-09 — Criação retroativa do blueprint (`docs/blueprint/PROJECT.md`,
+  `ARCHITECTURE.md`, `DESIGN.md`) a partir desta constituição e do código
+  existente. Sem mudança de escopo, princípios ou features.
