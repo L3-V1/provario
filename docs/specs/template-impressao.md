@@ -23,18 +23,18 @@ ou salvar a prova em PDF pela própria caixa de impressão do navegador.
 
 ## 3. Decisões da entrevista
 
-| Tema                      | Decisão                                                                                                                             |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| Estrutura                 | **Evoluir `PassoPreview.vue`** no Passo 4. Sem rota nova, sem página nova, sem componente de folha separado. Reaproveita `QuestaoPreview` / `TextoFormatado` / `GabaritoPreview` |
-| Aparência na tela         | **Folha A4 visual sempre**: retângulo branco com proporção A4 (210×297 mm), margens internas e sombra, centralizado. WYSIWYG com a impressão |
-| Quebra de questões        | **Questão nunca quebra** entre páginas nem entre colunas (`break-inside: avoid`). Se não couber, vai inteira para a próxima página/coluna |
-| Chrome na impressão       | `@media print` **esconde todo o chrome do app**: sidebar, topbar, `PageHeader`, stepper do wizard, `Message`s de aviso/info e os botões (Voltar / Imprimir / Nova prova). Imprime só a folha |
-| Gabarito                  | **Sempre** impresso, como **última página**, separado por quebra de página (`break-before: page`)                                    |
-| Impressão                 | `window.print()` disparado por botão "Imprimir" no Passo 4. Sem geração de PDF no servidor. "Salvar como PDF" é a opção da própria caixa de impressão |
-| Layout de colunas         | 1 ou 2 colunas conforme escolha do Passo 3 (`rascunho.layout`), tanto na tela quanto no papel. Cabeçalho e gabarito sempre 1 coluna |
-| Menu                      | **Sem mudança.** "Criar prova" já existe na sidebar; a impressão acontece dentro do Passo 4                                          |
-| Backend                   | **Nenhuma mudança.** Sem rota, controller, model, migration. Sem mudança em `localStorage` / `useRascunhoProva` / template do prompt / parser |
-| Dependências              | **Nenhuma nova.** Só CSS e Vue. Sem lib de PDF, sem lib de markdown (constituição)                                                   |
+| Tema                | Decisão                                                                                                                                                                                      |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Estrutura           | **Evoluir `PassoPreview.vue`** no Passo 4. Sem rota nova, sem página nova, sem componente de folha separado. Reaproveita `QuestaoPreview` / `TextoFormatado` / `GabaritoPreview`             |
+| Aparência na tela   | **Folha A4 visual sempre**: retângulo branco com proporção A4 (210×297 mm), margens internas e sombra, centralizado. WYSIWYG com a impressão                                                 |
+| Quebra de questões  | **Questão nunca quebra** entre páginas nem entre colunas (`break-inside: avoid`). Se não couber, vai inteira para a próxima página/coluna                                                    |
+| Chrome na impressão | `@media print` **esconde todo o chrome do app**: sidebar, topbar, `PageHeader`, stepper do wizard, `Message`s de aviso/info e os botões (Voltar / Imprimir / Nova prova). Imprime só a folha |
+| Gabarito            | **Sempre** impresso, como **última página**, separado por quebra de página (`break-before: page`)                                                                                            |
+| Impressão           | `window.print()` disparado por botão "Imprimir" no Passo 4. Sem geração de PDF no servidor. "Salvar como PDF" é a opção da própria caixa de impressão                                        |
+| Layout de colunas   | 1 ou 2 colunas conforme escolha do Passo 3 (`rascunho.layout`), tanto na tela quanto no papel. Cabeçalho e gabarito sempre 1 coluna                                                          |
+| Menu                | **Sem mudança.** "Criar prova" já existe na sidebar; a impressão acontece dentro do Passo 4                                                                                                  |
+| Backend             | **Nenhuma mudança.** Sem rota, controller, model, migration. Sem mudança em `localStorage` / `useRascunhoProva` / template do prompt / parser                                                |
+| Dependências        | **Nenhuma nova.** Só CSS e Vue. Sem lib de PDF, sem lib de markdown (constituição)                                                                                                           |
 
 ## 4. Escopo
 
@@ -46,7 +46,7 @@ ou salvar a prova em PDF pela própria caixa de impressão do navegador.
       quando não há avisos) e o botão "Imprimir".
     - Elemento da folha com classe estável (ex.: `folha-impressao`):
       `width: 210mm; min-height: 297mm; padding: ~15mm; background: white;
-      margin: 0 auto; box-shadow` na tela.
+margin: 0 auto; box-shadow` na tela.
     - Envolto por um container com `overflow-x: auto` para telas estreitas
       (a folha não encolhe; rola na horizontal).
     - Conteúdo da folha, nesta ordem:
@@ -74,8 +74,8 @@ ou salvar a prova em PDF pela própria caixa de impressão do navegador.
     - `@page { size: A4; margin: 15mm; }`.
     - Esconde todo o chrome: técnica de isolamento
       (`body * { visibility: hidden }` + `.folha-impressao, .folha-impressao *
-      { visibility: visible }` + reposiciona a folha em `top:0; left:0;
-      width:100%`), OU regras explícitas ocultando `aside` (sidebar),
+{ visibility: visible }` + reposiciona a folha em `top:0; left:0;
+width:100%`), OU regras explícitas ocultando `aside` (sidebar),
       `AppTopbar`, `PageHeader`, o stepper `<ol>`, os `Message` e os botões.
       Decisão da técnica exata fica para o plano; o resultado observável é:
       **só a folha é impressa**.
@@ -101,13 +101,13 @@ ou salvar a prova em PDF pela própria caixa de impressão do navegador.
 
 ## 5. Arquivos afetados (previsão — detalhe no plano)
 
-| Arquivo                                              | Mudança                                                            |
-| --------------------------------------------------- | ---------------------------------------------------------------- |
-| `resources/js/components/prova/PassoPreview.vue`     | Reescrito: folha A4 visual, botão "Imprimir", classes de print   |
-| `resources/js/components/prova/QuestaoPreview.vue`   | Classe / regra `break-inside: avoid`                             |
-| `resources/js/components/prova/GabaritoPreview.vue`  | Bloco com `break-before: page` (ou aplicado no `PassoPreview`)   |
-| `resources/js/pages/prova/Criar.vue`                 | Possível ajuste da barra de ações no Passo 4 (posição do botão)  |
-| `resources/css/app.css` (ou `print.css` importado)   | Bloco `@media print` + `@page`                                   |
+| Arquivo                                             | Mudança                                                         |
+| --------------------------------------------------- | --------------------------------------------------------------- |
+| `resources/js/components/prova/PassoPreview.vue`    | Reescrito: folha A4 visual, botão "Imprimir", classes de print  |
+| `resources/js/components/prova/QuestaoPreview.vue`  | Classe / regra `break-inside: avoid`                            |
+| `resources/js/components/prova/GabaritoPreview.vue` | Bloco com `break-before: page` (ou aplicado no `PassoPreview`)  |
+| `resources/js/pages/prova/Criar.vue`                | Possível ajuste da barra de ações no Passo 4 (posição do botão) |
+| `resources/css/app.css` (ou `print.css` importado)  | Bloco `@media print` + `@page`                                  |
 
 Sem mudança em rotas, `routes/`, `app/`, `database/`, `config/`.
 
@@ -126,11 +126,11 @@ Sem mudança em rotas, `routes/`, `app/`, `database/`, `config/`.
 6. Há um botão "Imprimir" que abre a caixa de impressão do navegador.
 7. Na pré-visualização de impressão do navegador:
    a. não aparecem sidebar, topbar, cabeçalho da página, stepper, avisos nem
-      botões — só a folha;
+   botões — só a folha;
    b. o papel é A4;
    c. nenhuma questão fica partida entre duas páginas ou duas colunas;
    d. o gabarito começa em uma página nova, sozinho (mais páginas se não
-      couber).
+   couber).
 8. Com o markdown vazio, a folha ainda mostra cabeçalho e linhas do aluno, com
    o texto "Nenhum markdown colado ainda." no lugar das questões, e o botão
    "Imprimir" continua funcionando.

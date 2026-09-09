@@ -130,7 +130,7 @@ Template — mudanças sobre o atual:
   na próxima etapa" → algo como "Confira a folha abaixo e clique em Imprimir.
   Use 'Salvar como PDF' na caixa de impressão para gerar um arquivo."
 - Adicionar, acima da folha, uma linha com o `<Button label="Imprimir"
-  icon="pi pi-print" @click="imprimir" />`. Sempre habilitado (CA6, CA8).
+icon="pi pi-print" @click="imprimir" />`. Sempre habilitado (CA6, CA8).
 - Renomear o container visual: classe `folha-impressao` no `div` que hoje é
   `border … rounded border p-6`. Remover `border/rounded/p-6/dark:*` — o
   visual agora é a folha branca A4. Envolver em
@@ -163,7 +163,7 @@ Template — mudanças sobre o atual:
 ### 2.4 `resources/js/components/prova/GabaritoPreview.vue`
 
 - Sem mudança de lógica. O `break-before: page` fica no `<section
-  class="folha-gabarito">` dentro de `PassoPreview`, não aqui.
+class="folha-gabarito">` dentro de `PassoPreview`, não aqui.
 
 ### 2.5 `resources/js/pages/prova/Criar.vue`
 
@@ -188,26 +188,26 @@ Template — mudanças sobre o atual:
 
 ## 4. Decisões de design
 
-| Decisão | Escolha | Porquê |
-| --- | --- | --- |
-| Isolamento de print | `visibility: hidden` em `body *` + reexibe `.folha-impressao` | Não precisa marcar cada peça de chrome; pega componentes teleportados; padrão consolidado |
-| Onde fica o CSS | `resources/css/app.css`, blocos `@layer components` + `@media print` | Uma folha de estilo só; sem arquivo/import novo; Vite já processa |
-| Folha sempre branca | cores fixas (`#fff`/`#000`), ignora tema dark | Papel é branco; evita "dark mode impresso"; fidelidade tela↔papel |
-| Folha na tela | `width: 210mm; min-height: 297mm` + `overflow-x:auto` no wrap | WYSIWYG (CA1) sem `transform: scale` (quebra clique/scroll) |
-| Quebra de questão | classe `.folha-questao` + utilitário `break-inside-avoid` | Redundância barata; garante CA7c mesmo com purge de utilitárias |
-| Botão "Imprimir" | dentro de `PassoPreview`, chama `window.print()` | Menos edição em `Criar.vue`; coeso com o preview |
-| Gabarito paginado | `<section class="folha-gabarito">` com `break-before: page` | Constituição: gabarito sempre última página separada (CA7d) |
+| Decisão             | Escolha                                                              | Porquê                                                                                    |
+| ------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Isolamento de print | `visibility: hidden` em `body *` + reexibe `.folha-impressao`        | Não precisa marcar cada peça de chrome; pega componentes teleportados; padrão consolidado |
+| Onde fica o CSS     | `resources/css/app.css`, blocos `@layer components` + `@media print` | Uma folha de estilo só; sem arquivo/import novo; Vite já processa                         |
+| Folha sempre branca | cores fixas (`#fff`/`#000`), ignora tema dark                        | Papel é branco; evita "dark mode impresso"; fidelidade tela↔papel                         |
+| Folha na tela       | `width: 210mm; min-height: 297mm` + `overflow-x:auto` no wrap        | WYSIWYG (CA1) sem `transform: scale` (quebra clique/scroll)                               |
+| Quebra de questão   | classe `.folha-questao` + utilitário `break-inside-avoid`            | Redundância barata; garante CA7c mesmo com purge de utilitárias                           |
+| Botão "Imprimir"    | dentro de `PassoPreview`, chama `window.print()`                     | Menos edição em `Criar.vue`; coeso com o preview                                          |
+| Gabarito paginado   | `<section class="folha-gabarito">` com `break-before: page`          | Constituição: gabarito sempre última página separada (CA7d)                               |
 
 ## 5. Riscos
 
-| Risco | Mitigação |
-| --- | --- |
+| Risco                                                                                               | Mitigação                                                                                                                                                                                                      |
+| --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `visibility:hidden` + `position:absolute` na folha corta conteúdo multipágina em alguns navegadores | Fallback: trocar por regras explícitas escondendo `aside`, `.app-topbar`, `.p-…` overlays, stepper e botões (`display:none`), sem mexer no fluxo da folha. Verificar no Chrome (alvo primário) na tarefa de QA |
-| `column-count: 2` + `break-inside: avoid` deixa colunas muito desiguais | Aceitável no MVP; não há requisito de balanceamento. Documentado como fora de escopo na spec |
-| `210mm` estoura a largura do `Card`/`main` em telas pequenas | `overflow-x:auto` no `.folha-wrap`; a folha rola horizontalmente, não encolhe (spec §4.1) |
-| Logo grande distorce cabeçalho no papel | `object-contain` + caixa fixa (`h-16 w-16`) já aplicados; mantidos |
-| Tema dark do app "vaza" para a folha na tela | Cores fixas na `.folha-impressao` e filhos; classes utilitárias `dark:` removidas do markup da folha |
-| Utilitárias Tailwind purgadas dentro de `@media print` | Seletores semânticos (`.folha-*`) no CSS escrito à mão não dependem do purge |
+| `column-count: 2` + `break-inside: avoid` deixa colunas muito desiguais                             | Aceitável no MVP; não há requisito de balanceamento. Documentado como fora de escopo na spec                                                                                                                   |
+| `210mm` estoura a largura do `Card`/`main` em telas pequenas                                        | `overflow-x:auto` no `.folha-wrap`; a folha rola horizontalmente, não encolhe (spec §4.1)                                                                                                                      |
+| Logo grande distorce cabeçalho no papel                                                             | `object-contain` + caixa fixa (`h-16 w-16`) já aplicados; mantidos                                                                                                                                             |
+| Tema dark do app "vaza" para a folha na tela                                                        | Cores fixas na `.folha-impressao` e filhos; classes utilitárias `dark:` removidas do markup da folha                                                                                                           |
+| Utilitárias Tailwind purgadas dentro de `@media print`                                              | Seletores semânticos (`.folha-*`) no CSS escrito à mão não dependem do purge                                                                                                                                   |
 
 ## 6. Verificação (tarefa de QA manual — sem teste automatizado de componente)
 

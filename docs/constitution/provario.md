@@ -77,6 +77,8 @@ já existente no template. Sem papéis/permissões.
 
 - Wizard de 4 passos para montar a prova (detalhe abaixo).
 - CRUD de perfis institucionais.
+- Painel inicial (dashboard) útil: retomar rascunho, atalhos, resumo de
+  perfis e guia do fluxo (detalhe abaixo).
 - Parser do contrato de markdown (seção "Contrato de formato do markdown").
 - Template de impressão A4 com gabarito.
 - Tipos de questão: múltipla escolha (a–e) e verdadeiro ou falso.
@@ -100,6 +102,7 @@ já existente no template. Sem papéis/permissões.
 | `wizard-criacao-prova`  | Wizard de 4 passos; rascunho em localStorage; preview mínimo até o parser entrar | Alta       | Concluída |
 | `parser-markdown`       | Parser TypeScript do contrato de markdown, com Vitest; integra ao passo 4        | Alta       | Concluída |
 | `template-impressao`    | Folha A4 para impressão via navegador, alimentada pelo parser                    | Alta       | Concluída |
+| `painel-inicial`        | Dashboard com card de rascunho, atalhos, resumo de perfis e guia do fluxo        | Média      | Planejada |
 
 ### Decisões de escopo (entrevista)
 
@@ -115,6 +118,7 @@ já existente no template. Sem papéis/permissões.
 2. `wizard-criacao-prova`
 3. `parser-markdown`
 4. `template-impressao`
+5. `painel-inicial` (pós-MVP; depende só de rotas e do rascunho já existentes)
 
 ---
 
@@ -193,6 +197,39 @@ Montagem da folha da prova para impressão via navegador.
   se quiser um arquivo.
 - Adiciona/ajusta item de menu se necessário.
 
+### Feature `painel-inicial`
+
+Enriquece a tela inicial (`route('dashboard')`, `resources/js/pages/Dashboard.vue`),
+hoje só um `Card` com texto placeholder. Sem nova entidade persistida, sem nova
+dependência. Quatro blocos:
+
+- **Card de rascunho:** lê `provario:rascunho-prova` do `localStorage` via o
+  composable existente `useRascunhoProva`.
+    - Com rascunho: mostra matéria, ano, quantidade de questões e passo atual
+      (`passoAtual` de 1–4); botões **"Retomar"** (vai para `route('prova.criar')`)
+      e **"Nova prova"** (chama `limparRascunho()` com `ConfirmDialog`) — única
+      forma de limpar o rascunho, coerente com o princípio de limpeza só por ação
+      explícita.
+    - Sem rascunho: CTA **"Criar prova"**.
+- **Atalhos rápidos:** ações para os fluxos principais — criar prova
+  (`prova.criar`), novo perfil (`perfis.create`), gerenciar perfis (`perfis.index`).
+- **Resumo de perfis:** lista compacta dos perfis institucionais do professor
+  (logo, instituição, escola) com link para o CRUD. Exige que
+  `DashboardController` passe a prop `perfis` via `PerfilInstitucionalService::listar`
+  (mesmo padrão já usado por `ProvaController`). Estado vazio com CTA para criar
+  o primeiro perfil.
+- **Guia do fluxo:** passo a passo estático (configurar → gerar prompt → colar
+  markdown da I.A. → pré-visualizar/imprimir), com lembrete do contrato de
+  formato do markdown. Conteúdo fixo, sem dados.
+
+Notas:
+
+- Introduz os primeiros componentes de "stat/widget" do front (subpasta
+  `components/painel/`); não há padrão prévio.
+- Não adiciona item de menu (o Dashboard já está no `AppSidebar`).
+- Sem novos testes de backend além do ajuste de prop do controller; sem Vitest
+  (não toca no parser).
+
 ### Campos do cabeçalho da prova
 
 - Instituição, escola, disciplina, professor.
@@ -265,3 +302,7 @@ Nenhuma.
 - 2026-09-09 — Criação retroativa do blueprint (`docs/blueprint/PROJECT.md`,
   `ARCHITECTURE.md`, `DESIGN.md`) a partir desta constituição e do código
   existente. Sem mudança de escopo, princípios ou features.
+- 2026-09-09 — Adição da feature `painel-inicial` (prioridade Média, pós-MVP):
+  enriquece a tela de dashboard, hoje só placeholder, com card de rascunho,
+  atalhos, resumo de perfis e guia do fluxo. Sem nova entidade, sem nova
+  dependência, sem novo princípio.

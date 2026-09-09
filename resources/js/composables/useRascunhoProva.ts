@@ -1,4 +1,4 @@
-import { reactive, watch } from 'vue';
+import { computed, reactive, watch } from 'vue';
 import type { RascunhoProva } from '@/types/prova';
 
 const STORAGE_KEY = 'provario:rascunho-prova';
@@ -92,6 +92,19 @@ export function useRascunhoProva() {
         { deep: true },
     );
 
+    /**
+     * Indica se há um rascunho de prova em andamento (AC-02): passo além do
+     * primeiro, algum campo de configuração preenchido ou markdown já colado.
+     */
+    const temRascunho = computed(
+        () =>
+            rascunho.passoAtual > 1 ||
+            rascunho.config.materia !== null ||
+            rascunho.config.ano !== null ||
+            rascunho.config.quantidade !== null ||
+            rascunho.conteudo.markdown.trim() !== '',
+    );
+
     /** Limpa o rascunho. Só deve ser chamado pelo botão "Nova prova". */
     function limparRascunho(): void {
         if (typeof window !== 'undefined') {
@@ -105,5 +118,5 @@ export function useRascunhoProva() {
         Object.assign(rascunho, estadoInicial());
     }
 
-    return { rascunho, limparRascunho };
+    return { rascunho, temRascunho, limparRascunho };
 }

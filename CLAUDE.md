@@ -58,14 +58,14 @@ enquanto não existirem, valem apenas as pastas e o padrão de nome abaixo. O sl
 o mesmo em todas as etapas: `docs/specs/checkout.md`, `docs/plans/checkout.md` e
 `docs/tasks/checkout.md` referem-se todos à feature `checkout`.
 
-| Artefato | Local | Skill que produz |
-|---|---|---|
-| Descrição do projeto, arquitetura e design (fase 0, opcional) | `docs/blueprint/PROJECT.md`, `ARCHITECTURE.md`, `DESIGN.md` | `/blueprint` |
-| Constituição (propósito + features do projeto) | `docs/constitution/<slug-do-projeto>.md` | `/constitute`, `/setup-project` |
-| Especificação da feature (critérios de aceite EARS) | `docs/specs/<slug-da-feature>.md` | `/specify` |
-| Plano técnico da feature | `docs/plans/<slug-da-feature>.md` | `/plan` |
-| Tarefas atômicas + progresso da implementação | `docs/tasks/<slug-da-feature>.md` | `/to-tasks` (produz), `/to-tdd` (atualiza progresso) |
-| Base de conhecimento (armadilhas já resolvidas) | `docs/knowledge/INDEX.md` + `docs/knowledge/<slug>.md` | `knowledge-base` |
+| Artefato                                                      | Local                                                       | Skill que produz                                     |
+| ------------------------------------------------------------- | ----------------------------------------------------------- | ---------------------------------------------------- |
+| Descrição do projeto, arquitetura e design (fase 0, opcional) | `docs/blueprint/PROJECT.md`, `ARCHITECTURE.md`, `DESIGN.md` | `/blueprint`                                         |
+| Constituição (propósito + features do projeto)                | `docs/constitution/<slug-do-projeto>.md`                    | `/constitute`, `/setup-project`                      |
+| Especificação da feature (critérios de aceite EARS)           | `docs/specs/<slug-da-feature>.md`                           | `/specify`                                           |
+| Plano técnico da feature                                      | `docs/plans/<slug-da-feature>.md`                           | `/plan`                                              |
+| Tarefas atômicas + progresso da implementação                 | `docs/tasks/<slug-da-feature>.md`                           | `/to-tasks` (produz), `/to-tdd` (atualiza progresso) |
+| Base de conhecimento (armadilhas já resolvidas)               | `docs/knowledge/INDEX.md` + `docs/knowledge/<slug>.md`      | `knowledge-base`                                     |
 
 ## Regras de Conduta
 

@@ -40,22 +40,22 @@ Tokens usados nas classes Tailwind do projeto (via `tailwindcss-primeui`, que
 expõe as cores semânticas do preset Aura como utilitários `*-surface-*`,
 `*-primary*`):
 
-| Token                    | Valor                                  | Papel semântico             | Onde usar                                              |
-| ------------------------ | -------------------------------------- | --------------------------- | ----------------------------------------------------- |
-| `surface-0`              | herdado do Aura (branco no light)      | superfície elevada          | sidebar, topbar, cards (`bg-surface-0`)               |
-| `surface-50`             | herdado do Aura                        | fundo da app (light)        | `AppLayout` (`bg-surface-50`)                          |
-| `surface-100` / `200`    | herdado do Aura                        | hover / bordas suaves       | hover de item de menu, borda de tabela                 |
-| `surface-200` (light)    | herdado do Aura                        | fundo de botão `secondary`  | override em `app.ts` (era `surface.100`, subiu 1 degrau) |
-| `surface-500`            | herdado do Aura                        | texto secundário            | subtítulos, `empty state` (`text-surface-500`)         |
-| `surface-600` / `300`    | herdado do Aura                        | texto de item de menu       | `AppSidebar` item inativo                              |
-| `surface-800`            | herdado do Aura                        | borda / hover (dark)        | bordas no dark                                         |
-| `surface-900`            | herdado do Aura                        | texto principal / superfície dark | `text-surface-900`, `dark:bg-surface-900`        |
-| `surface-950`            | herdado do Aura                        | fundo da app (dark)         | `dark:bg-surface-950`                                  |
-| `primary`                | herdado do Aura (preset stock)         | cor de marca / ação         | item de menu ativo (`text-primary`, `bg-primary/10`)  |
-| `--p-primary-color`      | herdado do Aura                        | barra de progresso Inertia  | `progress.color` em `app.ts`                           |
-| Folha: fundo             | `#fff`                                 | papel                       | `.folha-impressao` (fixo, não-token)                   |
-| Folha: texto             | `#000`                                 | tinta                       | `.folha-impressao` (fixo, não-token)                   |
-| Folha: sombra            | `rgba(0, 0, 0, 0.15)`                  | elevação da folha na tela   | `.folha-impressao box-shadow`                          |
+| Token                 | Valor                             | Papel semântico                   | Onde usar                                                |
+| --------------------- | --------------------------------- | --------------------------------- | -------------------------------------------------------- |
+| `surface-0`           | herdado do Aura (branco no light) | superfície elevada                | sidebar, topbar, cards (`bg-surface-0`)                  |
+| `surface-50`          | herdado do Aura                   | fundo da app (light)              | `AppLayout` (`bg-surface-50`)                            |
+| `surface-100` / `200` | herdado do Aura                   | hover / bordas suaves             | hover de item de menu, borda de tabela                   |
+| `surface-200` (light) | herdado do Aura                   | fundo de botão `secondary`        | override em `app.ts` (era `surface.100`, subiu 1 degrau) |
+| `surface-500`         | herdado do Aura                   | texto secundário                  | subtítulos, `empty state` (`text-surface-500`)           |
+| `surface-600` / `300` | herdado do Aura                   | texto de item de menu             | `AppSidebar` item inativo                                |
+| `surface-800`         | herdado do Aura                   | borda / hover (dark)              | bordas no dark                                           |
+| `surface-900`         | herdado do Aura                   | texto principal / superfície dark | `text-surface-900`, `dark:bg-surface-900`                |
+| `surface-950`         | herdado do Aura                   | fundo da app (dark)               | `dark:bg-surface-950`                                    |
+| `primary`             | herdado do Aura (preset stock)    | cor de marca / ação               | item de menu ativo (`text-primary`, `bg-primary/10`)     |
+| `--p-primary-color`   | herdado do Aura                   | barra de progresso Inertia        | `progress.color` em `app.ts`                             |
+| Folha: fundo          | `#fff`                            | papel                             | `.folha-impressao` (fixo, não-token)                     |
+| Folha: texto          | `#000`                            | tinta                             | `.folha-impressao` (fixo, não-token)                     |
+| Folha: sombra         | `rgba(0, 0, 0, 0.15)`             | elevação da folha na tela         | `.folha-impressao box-shadow`                            |
 
 Estados semânticos (`success`, `info`, `warn`, `danger`) vêm dos componentes
 PrimeVue (`Message`, `Toast`, `Button severity=...`); não há tokens de estado
@@ -75,13 +75,13 @@ próprios do projeto.
 
 Escala em uso (classes Tailwind observadas):
 
-| Uso                        | Classe            | Tamanho / peso aprox.        |
-| -------------------------- | ----------------- | ---------------------------- |
-| Título de página (`h1`)    | `text-2xl font-semibold` | 1.5rem / 600          |
-| Subtítulo de página        | `text-sm` (`text-surface-500`) | 0.875rem / 400  |
-| Item de menu               | `text-sm`         | 0.875rem / 400 (ativo: `font-medium`) |
-| Corpo padrão               | herdado (`14px` base do reset) | 0.875–1rem / 400 |
-| Enunciado/alternativas da prova | `text-sm`    | 0.875rem / 400 (número da questão: `font-semibold`) |
+| Uso                             | Classe                         | Tamanho / peso aprox.                               |
+| ------------------------------- | ------------------------------ | --------------------------------------------------- |
+| Título de página (`h1`)         | `text-2xl font-semibold`       | 1.5rem / 600                                        |
+| Subtítulo de página             | `text-sm` (`text-surface-500`) | 0.875rem / 400                                      |
+| Item de menu                    | `text-sm`                      | 0.875rem / 400 (ativo: `font-medium`)               |
+| Corpo padrão                    | herdado (`14px` base do reset) | 0.875–1rem / 400                                    |
+| Enunciado/alternativas da prova | `text-sm`                      | 0.875rem / 400 (número da questão: `font-semibold`) |
 
 `line-height`: padrão do Tailwind por tamanho; não há override do projeto.
 
@@ -198,26 +198,30 @@ Markup canônico da folha de prova:
 
 ```html
 <div class="folha-impressao">
-  <!-- cabeçalho: instituição, escola, disciplina, professor, título,
+    <!-- cabeçalho: instituição, escola, disciplina, professor, título,
        bimestre/período, valor total, logo + linhas em branco (nome, turma, data, nota) -->
-  <div class="folha-questao flex break-inside-avoid flex-col gap-2">
-    <p class="font-semibold">Questão N</p>
-    <p class="text-sm"><!-- enunciado via <TextoFormatado> --></p>
-    <ol class="flex break-inside-avoid flex-col gap-1 text-sm"> a) ... e) ... </ol>
-  </div>
-  <div class="folha-gabarito"><!-- sempre última página, break-before: page --></div>
+    <div class="folha-questao flex break-inside-avoid flex-col gap-2">
+        <p class="font-semibold">Questão N</p>
+        <p class="text-sm"><!-- enunciado via <TextoFormatado> --></p>
+        <ol class="flex break-inside-avoid flex-col gap-1 text-sm">
+            a) ... e) ...
+        </ol>
+    </div>
+    <div class="folha-gabarito">
+        <!-- sempre última página, break-before: page -->
+    </div>
 </div>
 ```
 
 ## 5. Padrões de interação e estados
 
 - **Estados obrigatórios de tela com dados:**
-  - Vazio — bloco centralizado `py-10 text-surface-500` com ícone `pi` + frase
-    (padrão do `DataTable #empty`).
-  - Carregando — navegação Inertia mostra a barra de progresso no topo
-    (`progress.color: var(--p-primary-color)`); sem skeletons próprios.
-  - Erro — `Message severity="error"`/`"warn"` inline, ou `Toast` de erro.
-  - Sem permissão — não se aplica (sem papéis).
+    - Vazio — bloco centralizado `py-10 text-surface-500` com ícone `pi` + frase
+      (padrão do `DataTable #empty`).
+    - Carregando — navegação Inertia mostra a barra de progresso no topo
+      (`progress.color: var(--p-primary-color)`); sem skeletons próprios.
+    - Erro — `Message severity="error"`/`"warn"` inline, ou `Toast` de erro.
+    - Sem permissão — não se aplica (sem papéis).
 - **Hover/focus/active/disabled:** herdados do Aura para componentes PrimeVue.
   Itens de menu: `transition-colors` + hover `bg-surface-100`/`dark:bg-surface-800`.
 - **Validação:** erros de formulário vêm do backend (form requests Laravel) via
@@ -280,11 +284,11 @@ Markup canônico da folha de prova:
   `appearance` (`path=/`, `max-age` 365d, `SameSite=Lax`) para SSR. `initializeTheme()`
   roda no bootstrap (`app.ts`).
 - **Mapeamento de tokens (seção 2.1) entre temas:**
-  - Fundo da app: `bg-surface-50` → `dark:bg-surface-950`.
-  - Superfície (sidebar/topbar): `bg-surface-0` → `dark:bg-surface-900`.
-  - Texto principal: `text-surface-900` → `dark:text-surface-0`.
-  - Bordas: `border-surface-200` → `dark:border-surface-800`.
-  - Cada utilitário de cor no projeto declara explicitamente seu par `dark:`.
+    - Fundo da app: `bg-surface-50` → `dark:bg-surface-950`.
+    - Superfície (sidebar/topbar): `bg-surface-0` → `dark:bg-surface-900`.
+    - Texto principal: `text-surface-900` → `dark:text-surface-0`.
+    - Bordas: `border-surface-200` → `dark:border-surface-800`.
+    - Cada utilitário de cor no projeto declara explicitamente seu par `dark:`.
 - **Exceção:** `.folha-impressao` é **tema único** — sempre `#fff`/`#000`,
   independente da classe `.dark`, porque o destino é papel.
 

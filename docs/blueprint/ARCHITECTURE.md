@@ -23,15 +23,15 @@
 ## Padrão arquitetural
 
 - **Backend em camadas: Controller → Service → Repository.**
-  - `app/Http/Controllers` — recebem a requisição, delegam ao Service, devolvem
-    resposta Inertia.
-  - `app/Http/Requests` — form requests para validação.
-  - `app/Services` — regra de negócio e orquestração (ex.: upload de logo).
-  - `app/Repositories` — acesso a dados. **Classes concretas, sem interface.**
-  - `app/Models` — models Eloquent (ex.: `PerfilInstitucional`).
-  - Motivo: separação testável e previsível sem a cerimônia de contratos/DI que o
-    tamanho do projeto não justifica (princípio "simplicidade acima de
-    flexibilidade").
+    - `app/Http/Controllers` — recebem a requisição, delegam ao Service, devolvem
+      resposta Inertia.
+    - `app/Http/Requests` — form requests para validação.
+    - `app/Services` — regra de negócio e orquestração (ex.: upload de logo).
+    - `app/Repositories` — acesso a dados. **Classes concretas, sem interface.**
+    - `app/Models` — models Eloquent (ex.: `PerfilInstitucional`).
+    - Motivo: separação testável e previsível sem a cerimônia de contratos/DI que o
+      tamanho do projeto não justifica (princípio "simplicidade acima de
+      flexibilidade").
 - **Frontend por tipo de artefato**, dentro de `resources/js`: `pages`,
   `components` (com subpasta por feature quando útil, ex.: `components/prova/`),
   `layouts`, `composables`, `lib`, `types`.
