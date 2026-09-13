@@ -69,6 +69,7 @@ function confirmDelete() {
     <div class="space-y-4">
         <PageHeader
             title="Perfil"
+            emoji="👤"
             subtitle="Atualize os dados da sua conta e a senha."
             :breadcrumbs="[{ label: 'Configurações' }, { label: 'Perfil' }]"
         />

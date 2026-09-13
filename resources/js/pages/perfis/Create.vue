@@ -23,6 +23,7 @@ function submit() {
     <div class="space-y-4">
         <PageHeader
             title="Novo perfil institucional"
+            emoji="➕"
             :breadcrumbs="[
                 { label: 'Perfis institucionais', href: route('perfis.index') },
                 { label: 'Novo perfil' },

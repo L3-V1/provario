@@ -31,6 +31,7 @@ function confirmarExclusao(perfil: Perfil) {
     <div class="space-y-4">
         <PageHeader
             title="Perfis institucionais"
+            emoji="🏫"
             :breadcrumbs="[{ label: 'Perfis institucionais' }]"
         >
             <template #actions>
@@ -48,8 +49,8 @@ function confirmarExclusao(perfil: Perfil) {
                 <div
                     class="text-surface-500 flex flex-col items-center justify-center gap-2 py-10"
                 >
-                    <i class="pi pi-inbox text-2xl" />
-                    <span>Nenhum perfil cadastrado.</span>
+                    <span aria-hidden="true" class="text-3xl">📭</span>
+                    <span>Nenhum perfil cadastrado ainda.</span>
                 </div>
             </template>
 

@@ -15,10 +15,10 @@ const severityMap: Record<FlashToast['type'], string> = {
 };
 
 const summaryMap: Record<FlashToast['type'], string> = {
-    success: 'Sucesso',
-    info: 'Informação',
-    warning: 'Atenção',
-    error: 'Erro',
+    success: '✅ Sucesso',
+    info: 'ℹ️ Informação',
+    warning: '⚠️ Atenção',
+    error: '❌ Erro',
 };
 
 let stop: (() => void) | undefined;

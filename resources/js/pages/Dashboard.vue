@@ -20,6 +20,7 @@ const user = computed(() => usePage().props.auth.user as User | null);
     <div class="space-y-4">
         <PageHeader
             title="Dashboard"
+            emoji="👋"
             :subtitle="`Bem-vindo(a), ${user?.name ?? ''}`"
             :breadcrumbs="[{ label: 'Dashboard' }]"
         />

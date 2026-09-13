@@ -1,11 +1,14 @@
 # Especificação — Feature 4: Template de impressão
 
-Slug: `template-impressao`. Deriva de
+**ID:** 04
+**Slug:** template-impressao
+
+Deriva de
 [../constitution/provario.md](../constitution/provario.md) (feature
 `template-impressao`, "Campos do cabeçalho da prova", "Tipos de questão
 suportados no MVP") e fecha o fluxo iniciado em
-[wizard-criacao-prova.md](wizard-criacao-prova.md) (Passo 4) e
-[parser-markdown.md](parser-markdown.md) (render das questões). As decisões
+[02-wizard-criacao-prova.md](02-wizard-criacao-prova.md) (Passo 4) e
+[03-parser-markdown.md](03-parser-markdown.md) (render das questões). As decisões
 abaixo vieram da rodada de perguntas; nada foi inventado.
 
 ## 1. Problema
@@ -151,4 +154,4 @@ Sem mudança em rotas, `routes/`, `app/`, `database/`, `config/`.
 ## 8. Perguntas em aberto
 
 Nenhuma. **Aprovação pendente** desta spec antes de avançar para o plano
-(`docs/plans/template-impressao.md`).
+(`docs/plans/04-template-impressao.md`).

@@ -19,10 +19,10 @@ const { rascunho, limparRascunho } = useRascunhoProva();
 const confirm = useConfirm();
 
 const passos = [
-    'Configuração',
-    'Prompt',
-    'Conteúdo e cabeçalho',
-    'Pré-visualização',
+    '⚙️ Configuração',
+    '🤖 Prompt',
+    '📄 Conteúdo e cabeçalho',
+    '👀 Pré-visualização',
 ];
 
 const configValida = computed(
@@ -82,6 +82,7 @@ function confirmarNovaProva() {
     <div class="space-y-4">
         <PageHeader
             title="Criar prova"
+            emoji="📝"
             :breadcrumbs="[{ label: 'Criar prova' }]"
         />
 

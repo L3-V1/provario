@@ -1,7 +1,10 @@
 # Tarefas — Feature 4: Template de impressão
 
-Deriva de [../plans/template-impressao.md](../plans/template-impressao.md) e
-[../specs/template-impressao.md](../specs/template-impressao.md).
+**ID:** 04
+**Slug:** template-impressao
+
+Deriva de [../plans/04-template-impressao.md](../plans/04-template-impressao.md) e
+[../specs/04-template-impressao.md](../specs/04-template-impressao.md).
 Marcar `[x]` ao concluir. Sem ciclo TDD Vitest (constituição restringe o
 Vitest ao parser); a verificação é a checklist QA manual da Etapa 4 mais a
 suíte existente verde. `CAn` = critério de aceite da spec §6.

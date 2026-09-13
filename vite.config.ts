@@ -10,13 +10,19 @@ export default defineConfig({
             input: ['resources/css/app.css', 'resources/js/app.ts'],
             refresh: true,
             fonts: [
-                fontsource('Geist Sans', {
-                    package: '@fontsource/geist-sans',
+                // Inter: texto corrido. Sora: títulos (`--font-display`).
+                // Preload apenas os pesos usados na primeira pintura; os demais
+                // carregam sob demanda (display: swap). Evita os avisos
+                // "preloaded ... was not used" do Firefox no dev server.
+                fontsource('Inter', {
+                    package: '@fontsource/inter',
                     weights: [400, 500, 600],
-                    // Preload apenas os pesos usados na primeira pintura;
-                    // 500 carrega sob demanda (display: swap). Evita os avisos
-                    // "preloaded ... was not used" do Firefox no dev server.
                     preload: [{ weight: 400 }, { weight: 600 }],
+                }),
+                fontsource('Sora', {
+                    package: '@fontsource/sora',
+                    weights: [600, 700],
+                    preload: [{ weight: 600 }],
                 }),
             ],
         }),

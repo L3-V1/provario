@@ -1,6 +1,9 @@
 # Tarefas — Feature 2: Wizard de criação de prova
 
-Deriva de [../plans/wizard-criacao-prova.md](../plans/wizard-criacao-prova.md).
+**ID:** 02
+**Slug:** wizard-criacao-prova
+
+Deriva de [../plans/02-wizard-criacao-prova.md](../plans/02-wizard-criacao-prova.md).
 Marcar `[x]` ao concluir. TDD: tarefas RED antes das GREEN correspondentes.
 
 Legenda de estado: `[ ]` pendente · `[~]` em andamento · `[x]` concluída

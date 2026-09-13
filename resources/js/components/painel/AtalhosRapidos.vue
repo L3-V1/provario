@@ -5,15 +5,11 @@ import Card from 'primevue/card';
 import { route } from 'ziggy-js';
 
 const atalhos = [
-    {
-        label: 'Criar prova',
-        icon: 'pi pi-file-edit',
-        href: route('prova.criar'),
-    },
-    { label: 'Novo perfil', icon: 'pi pi-plus', href: route('perfis.create') },
+    { label: 'Criar prova', emoji: '📝', href: route('prova.criar') },
+    { label: 'Novo perfil', emoji: '➕', href: route('perfis.create') },
     {
         label: 'Gerenciar perfis',
-        icon: 'pi pi-building',
+        emoji: '🏫',
         href: route('perfis.index'),
     },
 ];
@@ -21,20 +17,23 @@ const atalhos = [
 
 <template>
     <Card class="w-full">
-        <template #title>Atalhos rápidos</template>
+        <template #title>⚡ Atalhos rápidos</template>
 
         <template #content>
             <div class="flex flex-col gap-2">
                 <Button
                     v-for="atalho in atalhos"
                     :key="atalho.label"
-                    :label="atalho.label"
-                    :icon="atalho.icon"
                     :href="atalho.href"
                     :as="Link"
                     severity="secondary"
                     class="justify-start"
-                />
+                >
+                    <span aria-hidden="true" class="text-base">{{
+                        atalho.emoji
+                    }}</span>
+                    {{ atalho.label }}
+                </Button>
             </div>
         </template>
     </Card>

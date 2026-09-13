@@ -1,6 +1,9 @@
 # Tarefas — Feature 1: Perfis institucionais
 
-Deriva de [../plans/perfis-institucionais.md](../plans/perfis-institucionais.md).
+**ID:** 01
+**Slug:** perfis-institucionais
+
+Deriva de [../plans/01-perfis-institucionais.md](../plans/01-perfis-institucionais.md).
 Marcar `[x]` ao concluir. TDD: tarefas RED antes das GREEN correspondentes.
 
 Legenda de estado: `[ ]` pendente · `[~]` em andamento · `[x]` concluída

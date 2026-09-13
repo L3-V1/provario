@@ -5,6 +5,8 @@ import type { BreadcrumbItem } from '@/types';
 defineProps<{
     title: string;
     subtitle?: string;
+    /** Emoji decorativo do contexto da página, exibido antes do título. */
+    emoji?: string;
     breadcrumbs?: BreadcrumbItem[];
 }>();
 </script>
@@ -16,8 +18,9 @@ defineProps<{
         <div class="flex items-start justify-between gap-4">
             <div class="space-y-1">
                 <h1
-                    class="text-surface-900 dark:text-surface-0 text-2xl font-semibold"
+                    class="text-surface-900 dark:text-surface-0 flex items-center gap-2 text-2xl font-semibold"
                 >
+                    <span v-if="emoji" aria-hidden="true">{{ emoji }}</span>
                     {{ title }}
                 </h1>
                 <p v-if="subtitle" class="text-surface-500 text-sm">

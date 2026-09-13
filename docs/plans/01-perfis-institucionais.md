@@ -1,6 +1,9 @@
 # Plano de implementação — Feature 1: Perfis institucionais
 
-Baseado em [../specs/perfis-institucionais.md](../specs/perfis-institucionais.md).
+**ID:** 01
+**Slug:** perfis-institucionais
+
+Baseado em [../specs/01-perfis-institucionais.md](../specs/01-perfis-institucionais.md).
 Abordagem TDD RED-GREEN-REFACTOR. Ordem pensada para cada camada nascer coberta
 por teste antes da próxima depender dela.
 
@@ -74,7 +77,7 @@ _Sem teste próprio; validado pelas etapas seguintes._
 - `composer test` (pint --test + phpstan 7 + artisan test) verde.
 - `npm run check` verde.
 - Revisar checklist da spec seção 7.
-- Atualizar `docs/tasks/perfis-institucionais.md` com o progresso.
+- Atualizar `docs/tasks/01-perfis-institucionais.md` com o progresso.
 
 ## Arquivos criados/alterados
 

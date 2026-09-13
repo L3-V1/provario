@@ -1,6 +1,9 @@
 # Plano de implementação — Feature 2: Wizard de criação de prova
 
-Baseado em [../specs/wizard-criacao-prova.md](../specs/wizard-criacao-prova.md).
+**ID:** 02
+**Slug:** wizard-criacao-prova
+
+Baseado em [../specs/02-wizard-criacao-prova.md](../specs/02-wizard-criacao-prova.md).
 Abordagem TDD RED-GREEN-REFACTOR onde há lógica de servidor; frontend verificado
 por `npm run build` + `npm run types:check`. Prova não persistida — nenhuma
 migration/model/service/repository novo.
@@ -71,7 +74,7 @@ migration/model/service/repository novo.
 - `composer test` verde.
 - `npm run build` + `npm run types:check` verdes.
 - Revisar checklist do spec (seções 3 e 5).
-- Atualizar `docs/tasks/wizard-criacao-prova.md` com o progresso.
+- Atualizar `docs/tasks/02-wizard-criacao-prova.md` com o progresso.
 
 ## Arquivos criados/alterados
 

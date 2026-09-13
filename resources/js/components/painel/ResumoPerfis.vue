@@ -13,14 +13,14 @@ const lista = computed(() => props.perfis ?? []);
 
 <template>
     <Card class="w-full">
-        <template #title>Perfis institucionais</template>
+        <template #title>🏫 Perfis institucionais</template>
 
         <template #content>
             <div
                 v-if="lista.length === 0"
                 class="flex flex-col items-center gap-3 py-6 text-center"
             >
-                <i class="pi pi-inbox text-surface-400 text-2xl" />
+                <span aria-hidden="true" class="text-3xl">📭</span>
                 <p class="text-surface-600 dark:text-surface-300 text-sm">
                     Você ainda não cadastrou nenhum perfil institucional.
                 </p>

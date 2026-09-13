@@ -96,13 +96,51 @@ já existente no template. Sem papéis/permissões.
 
 ## Features do projeto
 
-| Slug                    | Descrição                                                                        | Prioridade | Status    |
-| ----------------------- | -------------------------------------------------------------------------------- | ---------- | --------- |
-| `perfis-institucionais` | CRUD de perfis institucionais (única entidade persistida)                        | Alta       | Concluída |
-| `wizard-criacao-prova`  | Wizard de 4 passos; rascunho em localStorage; preview mínimo até o parser entrar | Alta       | Concluída |
-| `parser-markdown`       | Parser TypeScript do contrato de markdown, com Vitest; integra ao passo 4        | Alta       | Concluída |
-| `template-impressao`    | Folha A4 para impressão via navegador, alimentada pelo parser                    | Alta       | Concluída |
-| `painel-inicial`        | Dashboard com card de rascunho, atalhos, resumo de perfis e guia do fluxo        | Média      | Planejada |
+<!-- O número de cada feature é o ID dela (2 dígitos, zero à esquerda), na ordem de
+     listagem. Ele prefixa os arquivos de spec/plano/tarefas como `NN-<slug>`. IDs são
+     estáveis e não reaproveitados: ao atualizar esta constituição, features novas
+     recebem o próximo ID livre (maior ID atual + 1). Dependências ficam por slug. -->
+
+### 01. Perfis institucionais (`perfis-institucionais`)
+
+CRUD de perfis institucionais (única entidade persistida).
+
+**Depende de:** nenhuma
+**Prioridade:** Alta
+**Status:** Concluída
+
+### 02. Wizard de criação de prova (`wizard-criacao-prova`)
+
+Wizard de 4 passos; rascunho em localStorage; preview mínimo até o parser
+entrar.
+
+**Depende de:** `perfis-institucionais`
+**Prioridade:** Alta
+**Status:** Concluída
+
+### 03. Parser do markdown (`parser-markdown`)
+
+Parser TypeScript do contrato de markdown, com Vitest; integra ao passo 4.
+
+**Depende de:** `wizard-criacao-prova`
+**Prioridade:** Alta
+**Status:** Concluída
+
+### 04. Template de impressão (`template-impressao`)
+
+Folha A4 para impressão via navegador, alimentada pelo parser.
+
+**Depende de:** `wizard-criacao-prova`, `parser-markdown`
+**Prioridade:** Alta
+**Status:** Concluída
+
+### 05. Painel inicial (`painel-inicial`)
+
+Dashboard com card de rascunho, atalhos, resumo de perfis e guia do fluxo.
+
+**Depende de:** nenhuma (só rotas e o rascunho já existentes)
+**Prioridade:** Média
+**Status:** Concluída
 
 ### Decisões de escopo (entrevista)
 
@@ -114,11 +152,11 @@ já existente no template. Sem papéis/permissões.
 
 ### Ordem de implementação
 
-1. `perfis-institucionais`
-2. `wizard-criacao-prova`
-3. `parser-markdown`
-4. `template-impressao`
-5. `painel-inicial` (pós-MVP; depende só de rotas e do rascunho já existentes)
+1. `01-perfis-institucionais`
+2. `02-wizard-criacao-prova`
+3. `03-parser-markdown`
+4. `04-template-impressao`
+5. `05-painel-inicial` (pós-MVP; depende só de rotas e do rascunho já existentes)
 
 ---
 
@@ -306,3 +344,10 @@ Nenhuma.
   enriquece a tela de dashboard, hoje só placeholder, com card de rascunho,
   atalhos, resumo de perfis e guia do fluxo. Sem nova entidade, sem nova
   dependência, sem novo princípio.
+- 2026-09-09 — `painel-inicial` concluída (commit `117b4d7`); todas as sete
+  tarefas de `docs/tasks/05-painel-inicial.md` fechadas. Com isso as cinco
+  features da constituição estão implementadas. Só atualização de status.
+- 2026-09-12 — Renomeação retroativa dos artefatos SDD para o padrão
+  `NN-<slug>.md` e numeração da seção "Features" com os IDs estáveis `01`–`05`,
+  alinhando o repositório à versão atual das skills. Sem mudança de escopo,
+  princípios ou features.

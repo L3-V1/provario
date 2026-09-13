@@ -19,14 +19,16 @@
             })();
         </script>
 
-        {{-- Inline style to set the HTML background color based on our theme in app.css --}}
+        {{-- Inline style to set the HTML background color based on our theme in app.css.
+             Values must match {surface.0} (light) and {surface.950} (dark) of the
+             PrimeVue preset, which app.css applies to html/body: slate.0 and zinc.950. --}}
         <style>
             html {
-                background-color: oklch(1 0 0);
+                background-color: #ffffff;
             }
 
             html.dark {
-                background-color: oklch(0.21 0.006 285.885);
+                background-color: #09090b;
             }
         </style>
 

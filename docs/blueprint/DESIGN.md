@@ -15,12 +15,14 @@
 
 ## 1. Princípios visuais
 
-- **Simples** — a UI da aplicação some para dar lugar ao conteúdo; PrimeVue Aura
-  stock, sem branding. Nenhuma tela introduz identidade visual institucional
-  (decisão de escopo da constituição).
+- **Acolhedor e educativo** — o público são professores do ensino fundamental.
+  O tema é o Aura customizado (ver §4): verde de marca, cantos arredondados,
+  botões com gradiente e leve relevo, cards com sombra suave e emojis
+  contextuais. A identidade é do **produto**, não da instituição do professor
+  — branding institucional segue fora de escopo (decisão da constituição).
 - **Funcional/utilitário** — telas administrativas diretas: `PageHeader` +
   conteúdo. Densidade padrão do PrimeVue, sem customização de espaçamento de
-  componente.
+  componente. A personalidade vem do tema, não de layouts decorativos.
 - **Fiel à impressão** — a folha da prova (`.folha-impressao`) é sempre
   monocromática (fundo `#fff`, texto `#000`), independente do tema da aplicação,
   porque o alvo é papel A4.
@@ -29,7 +31,9 @@ Regras que nenhuma tela deve violar:
 
 - Dark mode via classe `.dark` no `<html>`; todo utilitário de cor precisa do par
   `dark:`.
-- A folha de impressão nunca herda cores do tema — sempre preto sobre branco.
+- A folha de impressão nunca herda cores do tema — sempre preto sobre branco, e
+  **nunca contém emoji** (emoji colorido em folha monocromática sai como imagem
+  colorida na impressão).
 - Domínio e rótulos em português.
 
 ## 2. Fundamentos / design tokens
@@ -40,37 +44,59 @@ Tokens usados nas classes Tailwind do projeto (via `tailwindcss-primeui`, que
 expõe as cores semânticas do preset Aura como utilitários `*-surface-*`,
 `*-primary*`):
 
-| Token                 | Valor                             | Papel semântico                   | Onde usar                                                |
-| --------------------- | --------------------------------- | --------------------------------- | -------------------------------------------------------- |
-| `surface-0`           | herdado do Aura (branco no light) | superfície elevada                | sidebar, topbar, cards (`bg-surface-0`)                  |
-| `surface-50`          | herdado do Aura                   | fundo da app (light)              | `AppLayout` (`bg-surface-50`)                            |
-| `surface-100` / `200` | herdado do Aura                   | hover / bordas suaves             | hover de item de menu, borda de tabela                   |
-| `surface-200` (light) | herdado do Aura                   | fundo de botão `secondary`        | override em `app.ts` (era `surface.100`, subiu 1 degrau) |
-| `surface-500`         | herdado do Aura                   | texto secundário                  | subtítulos, `empty state` (`text-surface-500`)           |
-| `surface-600` / `300` | herdado do Aura                   | texto de item de menu             | `AppSidebar` item inativo                                |
-| `surface-800`         | herdado do Aura                   | borda / hover (dark)              | bordas no dark                                           |
-| `surface-900`         | herdado do Aura                   | texto principal / superfície dark | `text-surface-900`, `dark:bg-surface-900`                |
-| `surface-950`         | herdado do Aura                   | fundo da app (dark)               | `dark:bg-surface-950`                                    |
-| `primary`             | herdado do Aura (preset stock)    | cor de marca / ação               | item de menu ativo (`text-primary`, `bg-primary/10`)     |
-| `--p-primary-color`   | herdado do Aura                   | barra de progresso Inertia        | `progress.color` em `app.ts`                             |
-| Folha: fundo          | `#fff`                            | papel                             | `.folha-impressao` (fixo, não-token)                     |
-| Folha: texto          | `#000`                            | tinta                             | `.folha-impressao` (fixo, não-token)                     |
-| Folha: sombra         | `rgba(0, 0, 0, 0.15)`             | elevação da folha na tela         | `.folha-impressao box-shadow`                            |
+| Token                 | Valor                                    | Papel semântico                   | Onde usar                                                |
+| --------------------- | ---------------------------------------- | --------------------------------- | -------------------------------------------------------- |
+| `surface-0`           | herdado do Aura (branco no light)        | superfície elevada                | sidebar, topbar, cards (`bg-surface-0`)                  |
+| `surface-50`          | herdado do Aura                          | fundo da app (light)              | `AppLayout` (`bg-surface-50`)                            |
+| `surface-100` / `200` | herdado do Aura                          | hover / bordas suaves             | hover de item de menu, borda de tabela                   |
+| `surface-200` (light) | herdado do Aura                          | fundo de botão `secondary`        | override em `app.ts` (era `surface.100`, subiu 1 degrau) |
+| `surface-500`         | herdado do Aura                          | texto secundário                  | subtítulos, `empty state` (`text-surface-500`)           |
+| `surface-600` / `300` | herdado do Aura                          | texto de item de menu             | `AppSidebar` item inativo                                |
+| `surface-800`         | herdado do Aura                          | borda / hover (dark)              | bordas no dark                                           |
+| `surface-900`         | herdado do Aura                          | texto principal / superfície dark | `text-surface-900`, `dark:bg-surface-900`                |
+| `surface-950`         | herdado do Aura                          | fundo da app (dark)               | `dark:bg-surface-950`                                    |
+| `primary`             | escala `emerald` (declarada em `app.ts`) | cor de marca / ação               | item de menu ativo (`text-primary`, `bg-primary/10`)     |
+| `--p-primary-color`   | herdado do Aura                          | barra de progresso Inertia        | `progress.color` em `app.ts`                             |
+| Folha: fundo          | `#fff`                                   | papel                             | `.folha-impressao` (fixo, não-token)                     |
+| Folha: texto          | `#000`                                   | tinta                             | `.folha-impressao` (fixo, não-token)                     |
+| Folha: sombra         | `rgba(0, 0, 0, 0.15)`                    | elevação da folha na tela         | `.folha-impressao box-shadow`                            |
 
 Estados semânticos (`success`, `info`, `warn`, `danger`) vêm dos componentes
 PrimeVue (`Message`, `Toast`, `Button severity=...`); não há tokens de estado
 próprios do projeto.
 
-> Valores hex exatos de cada passo da escala `surface`/`primary`: **A definir** —
-> não estão fixados em código; são os defaults do preset Aura (`@primevue/themes`
-> v4.5.4). Se precisar dos hex, extraia do preset em runtime ou consulte a doc do
-> Aura.
+**Verde de marca (`primary` = `emerald`)**, agora declarado explicitamente no
+`AppPreset` de `resources/js/app.ts` — ponto único para trocar a cor do produto:
+
+| Passo | Hex       | Passo | Hex       |
+| ----- | --------- | ----- | --------- |
+| `50`  | `#ecfdf5` | `500` | `#10b981` |
+| `100` | `#d1fae5` | `600` | `#059669` |
+| `200` | `#a7f3d0` | `700` | `#047857` |
+| `300` | `#6ee7b7` | `800` | `#065f46` |
+| `400` | `#34d399` | `900` | `#064e3b` |
+|       |           | `950` | `#022c22` |
+
+A escala `surface` segue o Aura: **`slate` no tema claro** e **`zinc` no tema
+escuro** (`surface-0` = `#ffffff`; `surface-950` do dark = `#09090b`). Esses dois
+valores estão replicados no `<style>` inline de `resources/views/app.blade.php`,
+que pinta o fundo do `<html>` antes do CSS carregar — se a escala `surface`
+mudar, atualize lá também.
 
 ### 2.2 Tipografia
 
-- **Família (texto e título):** `Geist Sans` via `@fontsource/geist-sans`.
-  Stack de fallback (de `--font-sans` em `app.css`):
-  `'Geist Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'`.
+Duas famílias, ambas self-hosted via `fontsource` (registradas em
+`vite.config.ts`; sem CDN):
+
+- **Texto (`--font-sans`):** `Inter` — pesos 400/500/600.
+  `'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'`.
+  As famílias de emoji no fim do stack são o que faz os emojis da UI
+  renderizarem coloridos em qualquer SO — **não remova**.
+- **Títulos (`--font-display`):** `Sora` — pesos 600/700.
+  `'Sora', 'Inter', ui-sans-serif, system-ui, sans-serif`.
+- Aplicada por duas regras em `app.css`, sem tocar em componente: `h1, h2, h3`
+  (com `letter-spacing: -0.015em`) e `.p-card-title` — o `Card` do PrimeVue não
+  expõe token de família tipográfica e seu título não é heading semântico.
 - Sem família serifada; sem família mono declarada pelo projeto.
 
 Escala em uso (classes Tailwind observadas):
@@ -101,16 +127,30 @@ Escala em uso (classes Tailwind observadas):
 
 ### 2.4 Raios, bordas e sombras
 
-- **Raio base:** `--radius: 0.5rem` (`:root` em `app.css`). Derivados:
-  `--radius-lg = 0.5rem`, `--radius-md = 0.375rem` (`radius - 2px`),
-  `--radius-sm = 0.25rem` (`radius - 4px`).
-- Raios em uso: `rounded-md` (itens de menu, botões), `rounded` (thumbnails de
-  logo).
+- **Escala do preset** (`primitive.borderRadius` no `AppPreset`, um degrau acima
+  do Aura stock): `xs 4px`, `sm 6px`, `md 8px`, `lg 12px`, `xl 16px`. Governa
+  todo componente PrimeVue — botão `8px`, card `16px`.
+- **Raio base do Tailwind:** `--radius: 0.75rem` (`:root` em `app.css`), espelho
+  de `lg` da escala acima. Derivados: `--radius-lg = 0.75rem`,
+  `--radius-md = radius - 2px`, `--radius-sm = radius - 4px`. **Manter os dois em
+  sincronia** ao mexer em qualquer um.
+- Raios em uso: `rounded-md` (itens de menu), `rounded` (thumbnails de logo).
 - **Borda padrão:** `1px` (`border`, `border-r`, `border-b`) na cor
   `border-surface-200` / `dark:border-surface-800`.
-- **Sombra/elevação:** o projeto não usa utilitários `shadow-*` no chrome da app.
-  Única sombra explícita: a folha na tela — `box-shadow: 0 1px 8px rgba(0,0,0,0.15)`
-  (removida em `@media print`). Elevação de menus/drawer/dialog vem do PrimeVue.
+- **Sombras** (o projeto passou a usá-las; ainda **sem** utilitários `shadow-*`
+  do Tailwind — tudo vem do preset ou de `app.css`):
+
+    | Elemento            | Valor                                                             | Onde        |
+    | ------------------- | ----------------------------------------------------------------- | ----------- |
+    | Card (light)        | `0 1px 2px rgba(15,23,42,.04), 0 4px 12px rgba(15,23,42,.06)`     | `AppPreset` |
+    | Card (dark)         | `0 1px 2px rgba(0,0,0,.35), 0 4px 12px rgba(0,0,0,.25)`           | `AppPreset` |
+    | Botão cheio (light) | `inset 0 1px 0 rgb(255 255 255/.18), 0 1px 2px rgb(15 23 42/.12)` | `app.css`   |
+    | Botão cheio (dark)  | `inset 0 1px 0 rgb(255 255 255/.08), 0 1px 2px rgb(0 0 0/.3)`     | `app.css`   |
+    | Folha na tela       | `0 1px 8px rgba(0,0,0,.15)` (removida em `@media print`)          | `app.css`   |
+
+    O `inset` claro no topo é o que produz o relevo do botão; ele **não** se aplica
+    às variantes planas (`outlined`, `text`, `link`). Elevação de
+    menus/drawer/dialog continua vindo do PrimeVue.
 
 ### 2.5 Breakpoints e grid
 
@@ -135,13 +175,16 @@ Escala em uso (classes Tailwind observadas):
 - **Navegação (`AppSidebar.vue`):** logo no topo + lista vertical de `Link`
   Inertia. Item ativo: `bg-primary/10 text-primary font-medium`; inativo:
   `text-surface-600 dark:text-surface-300 hover:bg-surface-100 dark:hover:bg-surface-800`.
-  Ícone `size-4` do `@lucide/vue`. Itens atuais: Dashboard (`LayoutGrid`),
-  Perfis institucionais (`Building2`), Criar prova (`FileText`), Perfil
-  (`UserRound`). Cada feature acrescenta seus próprios itens aqui.
+  Cada item tem **um glifo**: o emoji de `NavItem.emoji` quando presente, senão
+  o ícone `size-4` do `@lucide/vue` de `NavItem.icon` (fallback). Itens atuais:
+  Dashboard 📊 (`LayoutGrid`), Perfis institucionais 🏫 (`Building2`),
+  Criar prova 📝 (`FileText`), Perfil 👤 (`UserRound`). Cada feature
+  acrescenta seus próprios itens aqui.
 - **Topbar (`AppTopbar.vue`):** botão de menu (só `<lg`), logo (só `<lg`), e à
   direita `ThemeToggle` + `UserMenu`.
 - **Cabeçalho de página (`PageHeader.vue`):** `Breadcrumbs` opcional +
-  `<h1 class="text-2xl font-semibold">` + subtítulo opcional
+  `<h1 class="text-2xl font-semibold">` (em `--font-display`, precedido do emoji
+  da página quando a prop `emoji` é passada) + subtítulo opcional
   (`text-sm text-surface-500`) + slot `#actions` à direita (tipicamente um
   `Button` "Novo ...").
 - **Página típica:** `<Head title="...">` + `<div class="space-y-4">` contendo
@@ -175,10 +218,28 @@ Componentes PrimeVue em uso: `Button`, `DataTable`/`Column`, `Drawer`, `Menu`,
 `Toast` (+ `ToastService`/`useToast`), form inputs (select/number/textarea nos
 passos do wizard), `DatePicker` (perfis/datas).
 
-Override de tema registrado (`app.ts`): `Button` `severity="secondary"` no tema
-light usa `background {surface.200}` / hover `{surface.300}` / active
-`{surface.400}` (o stock `{surface.100}` tinha contraste fraco sobre
-`{surface.0}`). Ver `docs/knowledge/botao-secondary-tema-light.md`.
+Overrides de tema registrados no `AppPreset` (`app.ts`):
+
+- `primitive.borderRadius` — escala de raio um degrau acima do stock (§2.4).
+- `semantic.primary` — verde de marca (`emerald`) declarado explicitamente.
+- `components.button.colorScheme.{light,dark}.root` — cada severidade cheia
+  (`primary`, `secondary`, `success`, `info`, `warn`, `help`, `danger`) tem
+  `background`/`hoverBackground`/`activeBackground` trocados por um **gradiente
+  vertical sutil** de dois pontos da própria escala, gerado pelos helpers
+  `relevo()` / `severidadeClara()` / `severidadeEscura()`. Isso é possível porque
+  o token `button.<severity>.background` do Aura alimenta a propriedade CSS
+  `background` (shorthand) e o motor de tema resolve referências `{token.path}`
+  dentro da string. O tom médio do gradiente iguala a cor sólida do stock — o
+  botão ganha profundidade sem mudar de cor percebida.
+    - `secondary` no light centra em `{surface.200}` (gradiente
+      `{surface.100}`→`{surface.300}`), preservando a correção de contraste do
+      stock `{surface.100}` sobre `{surface.0}`. Ver
+      `docs/knowledge/botao-secondary-tema-light.md`.
+- `components.card.colorScheme.{light,dark}.root.shadow` — sombra suave (§2.4).
+
+O **relevo** do botão (sombra interna no topo) não cabe no preset: o Aura só
+expõe token de sombra para a variante `raised`. Fica em `app.css`, restrito às
+variantes cheias.
 
 Convenções de `Button`:
 
@@ -186,8 +247,12 @@ Convenções de `Button`:
   do `PageHeader`); como link: `:as="Link" :href="route(...)"`.
 - Ação em tabela: `icon`-only, `variant="text"`, `severity` conforme
   destrutividade.
-- Ícone dentro de `Button` PrimeVue: usar `pi pi-*` (não Lucide) — ver
-  `docs/knowledge/icones-botoes-modais-confirmacao.md`.
+- Ícone dentro de `Button` PrimeVue: usar `pi pi-*` na prop `icon` (não Lucide)
+  — ver `docs/knowledge/icones-botoes-modais-confirmacao.md`.
+- Botão cujo glifo é um **emoji** (ex.: atalhos do painel) dispensa a prop
+  `icon` e monta o conteúdo pelo slot default:
+  `<span aria-hidden="true">📝</span> Rótulo`. Emoji e `pi` não se acumulam
+  no mesmo botão (§7).
 
 Componentes próprios: `AppLayout`, `AuthLayout`, `AppSidebar`, `AppTopbar`,
 `AppLogo`, `Breadcrumbs`, `PageHeader`, `FlashToasts`, `ThemeToggle`, `UserMenu`,
@@ -216,8 +281,9 @@ Markup canônico da folha de prova:
 ## 5. Padrões de interação e estados
 
 - **Estados obrigatórios de tela com dados:**
-    - Vazio — bloco centralizado `py-10 text-surface-500` com ícone `pi` + frase
-      (padrão do `DataTable #empty`).
+    - Vazio — bloco centralizado `py-10 text-surface-500` com **emoji**
+      `text-3xl` em `<span aria-hidden="true">` + frase (padrão do
+      `DataTable #empty`; ver `ResumoPerfis.vue` e `perfis/Index.vue`).
     - Carregando — navegação Inertia mostra a barra de progresso no topo
       (`progress.color: var(--p-primary-color)`); sem skeletons próprios.
     - Erro — `Message severity="error"`/`"warn"` inline, ou `Toast` de erro.
@@ -238,11 +304,17 @@ Markup canônico da folha de prova:
 
 ## 6. Movimento e transições
 
-- Apenas `transition-colors` nos itens de menu e transições internas dos
-  componentes PrimeVue (Drawer slide, Menu fade — durações/easings do Aura).
+- **Botões** (`app.css`): `transform 120ms ease, background 150ms ease,
+box-shadow 150ms ease`. No `:hover` o botão sobe (`translateY(-1px)`) e no
+  `:active` volta (`translateY(0)`) — o movimento reforça o relevo estático.
+  Estados `:disabled` são excluídos.
+- `transition-colors` nos itens de menu e transições internas dos componentes
+  PrimeVue (Drawer slide, Menu fade — durações/easings do Aura).
 - Sem animações de entrada de página, sem biblioteca de animação.
-- **`prefers-reduced-motion`:** **A definir** — não há tratamento explícito no
-  código do projeto.
+- **`prefers-reduced-motion: reduce`:** tratado — `app.css` zera a `transition` e
+  o `transform` de hover dos botões. **Toda animação nova do projeto deve vir
+  com o bloco correspondente**; o relevo estático (sombra) permanece, porque não
+  é movimento.
 
 ## 7. Iconografia e imagens
 
@@ -257,6 +329,20 @@ Markup canônico da folha de prova:
 - **Logo institucional:** imagem única por perfil, exibida `size-10`
   (`h-10 w-10`), `rounded`, `object-contain`. Sem logo: placeholder
   `<span class="pi pi-image text-surface-400 text-xl">`.
+- **Emojis** — fazem parte da linguagem visual (tom acolhedor/educativo, §1).
+  Regras:
+    - **Onde usar:** itens da sidebar (`NavItem.emoji`, que substitui o ícone
+      Lucide quando presente — `item.icon` segue como fallback), título de página
+      (prop `emoji` do `PageHeader`), títulos dos `Card` do painel, atalhos do
+      painel, passos do guia e do wizard, empty states e `summary` dos toasts.
+    - **Onde não usar:** dentro de `.folha-impressao` (regra inviolável — §1); e
+      não como substituto de `pi pi-*` dentro de `Button`/`ConfirmDialog` do
+      PrimeVue (a prop `icon` continua sendo PrimeIcons).
+    - **Um glifo por elemento:** emoji e ícone não se acumulam no mesmo rótulo.
+    - **Acessibilidade:** emoji decorativo ao lado de um rótulo textual vai em
+      `<span aria-hidden="true">`, para o leitor de tela não anunciar duas vezes.
+    - Renderizam coloridos graças às famílias de emoji no fim de `--font-sans`
+      (§2.2).
 - **Logo da aplicação:** `AppLogo.vue`.
 - Sem avatares de usuário; sem thumbnails além do logo.
 

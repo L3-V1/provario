@@ -1,6 +1,9 @@
 # Plano técnico — Feature 4: Template de impressão
 
-Deriva de [../specs/template-impressao.md](../specs/template-impressao.md)
+**ID:** 04
+**Slug:** template-impressao
+
+Deriva de [../specs/04-template-impressao.md](../specs/04-template-impressao.md)
 (aprovada). Não introduz requisito novo — só o "como". Numeração de critérios
 (CA1..CA10) refere-se à seção 6 da spec.
 
@@ -233,7 +236,7 @@ QA manual no Chrome, Passo 4 com markdown do exemplo da constituição:
    colado ainda."; botão ainda funciona (CA8).
 9. Avisos de parsing listados fora da folha, ausentes na impressão (CA9).
 
-## 7. Decomposição prevista (entra em `docs/tasks/template-impressao.md`)
+## 7. Decomposição prevista (entra em `docs/tasks/04-template-impressao.md`)
 
 1. CSS: `.folha-impressao` (tela) + `@media print` + `@page` em `app.css`.
 2. `PassoPreview.vue`: classe `folha-impressao`, wrap `overflow-x-auto`,

@@ -1,6 +1,9 @@
 # Plano de implementação — Feature 3: Parser do markdown
 
-Baseado em [../specs/parser-markdown.md](../specs/parser-markdown.md).
+**ID:** 03
+**Slug:** parser-markdown
+
+Baseado em [../specs/03-parser-markdown.md](../specs/03-parser-markdown.md).
 TDD RED-GREEN-REFACTOR no parser (Vitest); integração de frontend verificada por
 `npm run types:check` + `npm run build`. Nenhuma mudança de backend (rota,
 controller, model, migration, `localStorage`).
@@ -170,7 +173,7 @@ na implementação; testes importam de onde estiver.
   `npm run build`, `composer test` (backend intacto).
 - Atualizar `docs/constitution/provario.md` tabela de features:
   `parser-markdown` → Status **Concluída**.
-- Marcar progresso em `docs/tasks/parser-markdown.md`.
+- Marcar progresso em `docs/tasks/03-parser-markdown.md`.
 
 ## Riscos e mitigações
 

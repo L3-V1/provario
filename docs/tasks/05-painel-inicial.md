@@ -1,8 +1,9 @@
 # Tarefas: Painel inicial
 
 **Status:** gerado
+**ID:** 05
 **Slug:** painel-inicial
-**Plano de referência:** docs/plans/painel-inicial.md
+**Plano de referência:** docs/plans/05-painel-inicial.md
 **Paralelização:** não
 
 - [x] **T-01** — `computed temRascunho` em `useRascunhoProva`

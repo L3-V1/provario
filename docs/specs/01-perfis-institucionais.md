@@ -1,6 +1,9 @@
 # Especificação — Feature 1: Perfis institucionais
 
-Slug: `perfis-institucionais`. Deriva de [../constitution/provario.md](../constitution/provario.md)
+**ID:** 01
+**Slug:** perfis-institucionais
+
+Deriva de [../constitution/provario.md](../constitution/provario.md)
 (feature `perfis-institucionais`, "Campos do cabeçalho da prova"). Decisões
 abaixo vieram da rodada de perguntas; nada foi inventado.
 

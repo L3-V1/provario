@@ -1,6 +1,9 @@
 # Especificação — Feature 2: Wizard de criação de prova
 
-Slug: `wizard-criacao-prova`. Deriva de [../constitution/provario.md](../constitution/provario.md)
+**ID:** 02
+**Slug:** wizard-criacao-prova
+
+Deriva de [../constitution/provario.md](../constitution/provario.md)
 (feature `wizard-criacao-prova`, "Contrato de formato do markdown",
 "Tratamento de erro de parsing"). As decisões abaixo vieram das rodadas de
 perguntas; nada foi inventado.

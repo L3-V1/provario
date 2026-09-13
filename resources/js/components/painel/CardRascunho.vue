@@ -26,7 +26,7 @@ function confirmarNovaProva() {
 
 <template>
     <Card class="w-full">
-        <template #title>Rascunho de prova</template>
+        <template #title>📝 Rascunho de prova</template>
 
         <template #content>
             <div v-if="temRascunho" class="flex flex-col gap-4">

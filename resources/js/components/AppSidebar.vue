@@ -18,24 +18,28 @@ const items = computed<NavItem[]>(() => {
     return [
         {
             label: 'Dashboard',
+            emoji: '📊',
             href: route('dashboard'),
             icon: LayoutGrid,
             active: route().current('dashboard'),
         },
         {
             label: 'Perfis institucionais',
+            emoji: '🏫',
             href: route('perfis.index'),
             icon: Building2,
             active: route().current('perfis.*'),
         },
         {
             label: 'Criar prova',
+            emoji: '📝',
             href: route('prova.criar'),
             icon: FileText,
             active: route().current('prova.*'),
         },
         {
             label: 'Perfil',
+            emoji: '👤',
             href: route('profile.edit'),
             icon: UserRound,
             active: route().current('profile.*'),
@@ -63,7 +67,10 @@ const items = computed<NavItem[]>(() => {
                 "
                 @click="$emit('navigate')"
             >
-                <component :is="item.icon" class="size-4" />
+                <span v-if="item.emoji" aria-hidden="true" class="text-base">{{
+                    item.emoji
+                }}</span>
+                <component v-else :is="item.icon" class="size-4" />
                 {{ item.label }}
             </Link>
         </nav>

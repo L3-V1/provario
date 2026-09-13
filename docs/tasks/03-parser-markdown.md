@@ -1,7 +1,10 @@
 # Tarefas — Feature 3: Parser do markdown
 
-Deriva de [../plans/parser-markdown.md](../plans/parser-markdown.md) e
-[../specs/parser-markdown.md](../specs/parser-markdown.md).
+**ID:** 03
+**Slug:** parser-markdown
+
+Deriva de [../plans/03-parser-markdown.md](../plans/03-parser-markdown.md) e
+[../specs/03-parser-markdown.md](../specs/03-parser-markdown.md).
 Marcar `[x]` ao concluir. TDD: tarefas RED antes das GREEN correspondentes.
 
 Legenda de estado: `[ ]` pendente · `[~]` em andamento · `[x]` concluída

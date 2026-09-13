@@ -1,8 +1,9 @@
 # Plano técnico: Painel inicial
 
 **Status:** gerado
+**ID:** 05
 **Slug:** painel-inicial
-**Spec de referência:** docs/specs/painel-inicial.md
+**Spec de referência:** docs/specs/05-painel-inicial.md
 
 ## Resumo da abordagem
 

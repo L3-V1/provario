@@ -1,8 +1,11 @@
 # Especificação — Feature 3: Parser do markdown
 
-Slug: `parser-markdown`. Deriva de [../constitution/provario.md](../constitution/provario.md)
+**ID:** 03
+**Slug:** parser-markdown
+
+Deriva de [../constitution/provario.md](../constitution/provario.md)
 (feature `parser-markdown`, "Contrato de formato do markdown", "Tratamento de
-erro de parsing") e complementa [wizard-criacao-prova.md](wizard-criacao-prova.md)
+erro de parsing") e complementa [02-wizard-criacao-prova.md](02-wizard-criacao-prova.md)
 (Passo 4). As decisões abaixo vieram da rodada de perguntas; nada foi inventado.
 
 ## 1. Decisões da entrevista técnica
