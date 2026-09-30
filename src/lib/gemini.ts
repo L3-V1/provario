@@ -24,6 +24,30 @@ function fail(kind: GeminiErrorKind, message: string): ConnectionResult {
   return { ok: false, kind, message }
 }
 
+async function apiMessage(res: Response): Promise<string> {
+  try {
+    const data = await res.clone().json()
+    return String(data?.error?.message ?? '')
+  } catch {
+    return ''
+  }
+}
+
+async function mapResponse(res: Response): Promise<ConnectionResult> {
+  const { status } = res
+  if (status === 400) {
+    const detail = await apiMessage(res)
+    if (detail.includes('API key not valid') || detail.includes('API_KEY_INVALID')) {
+      return mapStatus(status)
+    }
+    return fail(
+      'unknown',
+      `O Gemini recusou a requisição (erro 400)${detail ? `: ${detail}` : '.'}`,
+    )
+  }
+  return mapStatus(status)
+}
+
 function mapStatus(status: number): ConnectionResult {
   if (status === 400 || status === 401 || status === 403) {
     return fail(
@@ -86,12 +110,9 @@ export async function testConnection(apiKey: string): Promise<ConnectionResult> 
   try {
     const res = await generateContent(apiKey, {
       contents: [{ parts: [{ text: 'Responda apenas: OK' }] }],
-      generationConfig: {
-        maxOutputTokens: 64,
-        thinkingConfig: { thinkingLevel: 'minimal' },
-      },
+      generationConfig: { maxOutputTokens: 64 },
     })
-    return res.ok ? { ok: true } : mapStatus(res.status)
+    return res.ok ? { ok: true } : await mapResponse(res)
   } catch (err) {
     if (err instanceof DOMException && err.name === 'AbortError') {
       return fail('timeout', 'O Gemini demorou demais para responder. Tente novamente.')

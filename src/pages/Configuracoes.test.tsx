@@ -82,7 +82,7 @@ describe('Configurações', () => {
 
   it('chave inválida mostra mensagem clara em role=alert', async () => {
     localStorage.setItem('provario:settings', '{"version":1,"geminiApiKey":"falsa"}')
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 400 })))
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{"error":{"message":"API key not valid. Please pass a valid API key."}}', { status: 400 })))
     renderAt('/configuracoes')
     await userEvent.click(screen.getByRole('button', { name: 'Testar conexão' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Chave inválida')

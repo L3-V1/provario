@@ -35,21 +35,23 @@ describe('testConnection', () => {
     expect(init!.method).toBe('POST')
   })
 
-  it('pede raciocínio mínimo e poucos tokens no teste de conexão', async () => {
-    const fn = mockFetch(async () => jsonResponse(200, {}))
-    await testConnection('x')
-    const body = JSON.parse(fn.mock.calls[0][1]!.body as string)
-    expect(body.generationConfig.thinkingConfig).toEqual({ thinkingLevel: 'minimal' })
-    expect(body.generationConfig.maxOutputTokens).toBeLessThanOrEqual(64)
-  })
-
   it('400 API_KEY_INVALID → chave inválida', async () => {
     mockFetch(async () =>
-      jsonResponse(400, { error: { status: 'INVALID_ARGUMENT', details: [{ reason: 'API_KEY_INVALID' }] } }),
+      jsonResponse(400, { error: { message: 'API key not valid. Please pass a valid API key.', status: 'INVALID_ARGUMENT', details: [{ reason: 'API_KEY_INVALID' }] } }),
     )
     const r = await testConnection('x')
     expect(r).toMatchObject({ ok: false, kind: 'invalid-key' })
     expect(!r.ok && r.message).toContain('Chave inválida')
+  })
+
+  it('400 por outro motivo NÃO vira "chave inválida" e mostra o detalhe', async () => {
+    mockFetch(async () =>
+      jsonResponse(400, { error: { message: 'Parâmetro X não suportado', status: 'INVALID_ARGUMENT' } }),
+    )
+    const r = await testConnection('x')
+    expect(r).toMatchObject({ ok: false, kind: 'unknown' })
+    expect(!r.ok && r.message).toContain('Parâmetro X não suportado')
+    expect(!r.ok && r.message).not.toContain('Chave inválida')
   })
 
   it('403 → chave inválida ou sem permissão', async () => {
