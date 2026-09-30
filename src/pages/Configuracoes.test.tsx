@@ -60,12 +60,20 @@ describe('Configurações', () => {
   it('remove a chave somente após confirmação', async () => {
     localStorage.setItem('provario:settings', '{"version":1,"geminiApiKey":"abc"}')
     renderAt('/configuracoes')
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false)
     await userEvent.click(screen.getByRole('button', { name: 'Remover chave' }))
+    expect(screen.getByRole('alertdialog')).toHaveAccessibleName('Remover a chave do Gemini?')
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
+    expect(screen.queryByRole('alertdialog')).toBeNull()
     expect(screen.getByLabelText('Chave do Gemini')).toHaveValue('abc')
-    confirm.mockReturnValueOnce(true)
+
     await userEvent.click(screen.getByRole('button', { name: 'Remover chave' }))
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('alertdialog')).toBeNull()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Remover chave' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Remover' }))
     expect(screen.getByLabelText('Chave do Gemini')).toHaveValue('')
+    expect(screen.getByRole('status')).toHaveTextContent('Chave removida')
     expect(JSON.parse(localStorage.getItem('provario:settings')!).geminiApiKey).toBe('')
   })
 

@@ -1,1 +1,184 @@
 @import "tailwindcss";
+
+/*
+ * Identidade "fichário": folha quadriculada presa por argolas, abas de
+ * divisória na navegação e relevo chapado (neo-brutalista). Só modo claro.
+ * A paleta padrão do Tailwind é descartada para que só estes tokens existam.
+ */
+@theme {
+  --color-*: initial;
+  --color-white: #ffffff;
+  --color-transparent: transparent;
+
+  --color-tinta: #10291c;
+  --color-tinta-suave: #3d5446;
+  --color-santos: #006b3a;
+  --color-santos-escuro: #004d2a;
+  --color-santos-claro: #dcefe0;
+  --color-capa: #cfe3d2;
+  --color-capa-escura: #b5d3ba;
+  --color-folha: #f4f7ef;
+  --color-quadricula: #dce9dc;
+  --color-margem: #e58a84;
+  --color-caneta: #b3261e;
+  --color-caneta-escura: #8f1e18;
+  --color-caneta-claro: #fbe9e7;
+  --color-marca-texto: #d9f26b;
+  --color-post-it: #eff6c6;
+  --color-aba-1: #8fd19e;
+  --color-aba-2: #d9f26b;
+  --color-desabilitado: #e3e9e0;
+  --color-desabilitado-texto: #56685c;
+
+  --font-display: "Archivo", "Arial Narrow", Arial, sans-serif;
+  --font-sans: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, sans-serif;
+
+  --shadow-relevo: 6px 6px 0 var(--color-tinta);
+  --shadow-relevo-sm: 3px 3px 0 var(--color-tinta);
+  --shadow-relevo-perigo: 3px 3px 0 var(--color-caneta);
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  body {
+    @apply bg-capa font-sans text-tinta antialiased;
+    /* Papelão prensado da capa do fichário. */
+    background-image: repeating-linear-gradient(
+      135deg,
+      transparent 0 7px,
+      color-mix(in srgb, var(--color-capa-escura) 45%, transparent) 7px 8px
+    );
+    font-size: 1.0625rem;
+    line-height: 1.6;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display text-tinta;
+    line-height: 1.15;
+    text-wrap: balance;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-santos);
+    outline-offset: 3px;
+  }
+
+  ::selection {
+    background: var(--color-marca-texto);
+    color: var(--color-tinta);
+  }
+}
+
+@layer components {
+  /* Folha de caderno quadriculado com margem vermelha. */
+  .folha {
+    @apply border-2 border-tinta bg-folha shadow-relevo;
+    --margem-x: 2.5rem;
+    background-image:
+      linear-gradient(90deg, transparent calc(var(--margem-x) - 1px), var(--color-margem) calc(var(--margem-x) - 1px) calc(var(--margem-x) + 1px), transparent calc(var(--margem-x) + 1px)),
+      linear-gradient(var(--color-quadricula) 1px, transparent 1px),
+      linear-gradient(90deg, var(--color-quadricula) 1px, transparent 1px);
+    background-size: 100% 100%, 24px 24px, 24px 24px;
+  }
+
+  @media (width >= 40rem) {
+    .folha {
+      --margem-x: 3.25rem;
+    }
+  }
+
+  /* Furos das argolas, mostrando a capa por trás da folha. */
+  .furos {
+    background-image: radial-gradient(
+      circle at 50% 50%,
+      var(--color-capa) 0 7px,
+      var(--color-tinta) 7px 9px,
+      transparent 9.5px
+    );
+    background-size: 100% 88px;
+    background-position: 0 28px;
+    background-repeat: repeat-y;
+  }
+
+  .titulo-pagina {
+    @apply font-display text-3xl font-black sm:text-4xl;
+    font-stretch: 112%;
+    letter-spacing: -0.01em;
+  }
+
+  /* Traço de marca-texto sob o título, como grifado à mão. */
+  .titulo-pagina > span {
+    background: linear-gradient(transparent 58%, var(--color-marca-texto) 58% 92%, transparent 92%);
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+
+  /* Ficha pautada: bloco de conteúdo sobre a folha. */
+  .ficha {
+    @apply border-2 border-tinta bg-white shadow-relevo-sm;
+  }
+
+  .ficha-cabecalho {
+    @apply border-b-2 border-tinta px-3 py-3 sm:px-5;
+    box-shadow: inset 0 -4px 0 var(--color-santos-claro);
+  }
+
+  .btn {
+    @apply inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 border-2 border-tinta px-4 py-2 font-display text-base font-bold whitespace-nowrap shadow-relevo-sm;
+    transition:
+      transform 80ms ease-out,
+      box-shadow 80ms ease-out;
+  }
+
+  .btn:active:not(:disabled) {
+    transform: translate(3px, 3px);
+    box-shadow: 0 0 0 transparent;
+  }
+
+  .btn:disabled {
+    @apply cursor-not-allowed border-desabilitado-texto bg-desabilitado text-desabilitado-texto shadow-none;
+  }
+
+  .btn-primario {
+    @apply bg-santos text-white hover:bg-santos-escuro;
+  }
+
+  .btn-secundario {
+    @apply bg-white text-tinta hover:bg-santos-claro;
+  }
+
+  .btn-perigo {
+    @apply border-caneta bg-caneta text-white shadow-relevo-perigo hover:bg-caneta-escura;
+  }
+
+  .btn-perigo-contorno {
+    @apply border-caneta bg-white text-caneta shadow-relevo-perigo hover:bg-caneta-claro;
+  }
+
+  .campo {
+    @apply min-h-11 w-full min-w-0 border-2 border-tinta bg-white px-3 py-2 text-tinta;
+    box-shadow: inset 3px 3px 0 var(--color-santos-claro);
+  }
+
+  .campo:focus-visible {
+    outline-offset: 0;
+  }
+
+  .link {
+    @apply font-bold text-santos-escuro underline decoration-2 underline-offset-3 hover:bg-marca-texto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
+}
