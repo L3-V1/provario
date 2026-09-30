@@ -53,7 +53,7 @@ Uma professora de Ciências do Ensino Fundamental II da rede pública de Santos 
 | 6 | Histórico e backup | Lista de provas salvas, com reabrir, reimprimir, duplicar e excluir, e exportação/importação de backup | 3 |
 
 ## Fase 1 — Fundação, deploy e conexão com o Gemini
-**Status:** pendente
+**Status:** concluída
 **Objetivo:** Colocar o projeto no ar no GitHub Pages e validar cedo a chamada ao Gemini direto do navegador, que é o maior risco técnico.
 **Entregas:**
 - Projeto com Vite, React, TypeScript e Tailwind CSS configurado
