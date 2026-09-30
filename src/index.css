@@ -25,6 +25,7 @@
   --color-caneta-claro: #fbe9e7;
   --color-marca-texto: #d9f26b;
   --color-post-it: #eff6c6;
+  --color-aba-inativa: #e0e6d8;
   --color-desabilitado: #e3e9e0;
   --color-desabilitado-texto: #56685c;
 
@@ -110,7 +111,8 @@
   }
 
   /* Traço de marca-texto sob o título, como grifado à mão. */
-  .titulo-pagina > span {
+  .titulo-pagina > span,
+  .aba-ativa > span {
     background: linear-gradient(transparent 58%, var(--color-marca-texto) 58% 92%, transparent 92%);
     box-decoration-break: clone;
     -webkit-box-decoration-break: clone;

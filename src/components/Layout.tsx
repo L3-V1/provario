@@ -1,6 +1,6 @@
 import { NavLink, Outlet } from 'react-router'
 
-// Cada seção do app é uma divisória do fichário; a aba ativa ganha o marca-texto.
+// Cada seção do app é uma divisória do fichário; a ativa se emenda à folha e leva o grifo de marca-texto.
 const abas = [
   { to: '/', label: 'Início' },
   { to: '/configuracoes', label: 'Configurações' },
@@ -31,12 +31,12 @@ export default function Layout() {
                   'relative border-2 border-tinta px-4 py-2.5 font-display font-bold whitespace-nowrap',
                   'border-b-0 md:border-b-2 md:border-l-0 md:py-3 md:pr-5',
                   isActive
-                    ? 'z-10 bg-marca-texto text-tinta'
-                    : 'bg-white text-tinta hover:underline hover:decoration-2 hover:underline-offset-4 md:shadow-relevo-sm',
+                    ? 'aba-ativa z-10 bg-folha text-tinta'
+                    : 'bg-aba-inativa text-tinta-suave hover:text-tinta hover:underline hover:decoration-2 hover:underline-offset-4',
                 ].join(' ')
               }
             >
-              {a.label}
+              <span>{a.label}</span>
             </NavLink>
           ))}
         </nav>
