@@ -1,7 +1,7 @@
 ---
 titulo: Provario — Fase 1: Fundação, deploy e conexão com o Gemini
 data: 2026-09-30
-status: aprovado
+status: implementado
 ---
 
 # Plano — Provario, Fase 1: Fundação, deploy e conexão com o Gemini
@@ -85,3 +85,28 @@ Decisões já tomadas com o usuário: repositório `provario` no GitHub (base `/
 - **Chave no localStorage:** fica exposta a quem usar o mesmo navegador e a qualquer script da página. Aceitável no MVP (sem dependências de terceiros em runtime, sem backend); a tela avisa isso.
 - **Limite de ~5 MB do localStorage:** irrelevante agora; na Fase 2 a logo deve ser redimensionada/comprimida no upload. A camada já sinaliza cota estourada.
 - **Publicação depende de você:** criar o repositório e ativar o Pages com origem "GitHub Actions" (passo 9). Se o nome do repo mudar, basta ajustar o `base` no `vite.config.ts`.
+
+## Relatório de implementação
+**Data:** 2026-09-30
+**Abordagem:** combinação de TDD (lógica em `storage` e `gemini`) e BDD (comportamento da tela de Configurações), em Vitest + Testing Library, sem framework novo.
+
+**Resultado:** 32 testes passando, lint (`oxlint`) e `tsc -b` limpos, build com base `/provario/` conferido. Site publicado no GitHub Pages; chave persiste após recarregar e "Testar conexão" funciona com chave válida.
+
+| Item | Descrição (do plano) | Teste(s) | Resultado |
+|---|---|---|---|
+| P1–P5 | storage: grava/lê, padrão com ausente/corrompido, `removeItem`, `StorageQuotaError`, `subscribe` | `src/lib/storage.test.ts` | ✅ passando |
+| P6–P9 | gemini: sucesso, chave no header, 400/401/403/429/503, rede, timeout, outros status | `src/lib/gemini.test.ts` | ✅ passando |
+| P10–P13 | Configurações: salvar, persistir, mostrar/ocultar, remover com confirmação, testar conexão, passo a passo e aviso | `src/pages/Configuracoes.test.tsx` | ✅ passando |
+| P14 | Início avisa sem chave | `src/pages/Configuracoes.test.tsx` | ✅ passando |
+| P15 | base `/provario/` | `vite build` + `vite preview` | ✅ verificado |
+| P16 | workflow, README, scripts | `.github/workflows/deploy.yml` executou no push | ✅ verificado |
+| P17 | teste com chave real, recarregar, layout | verificação manual pelo usuário | ✅ confirmado |
+| P18 | site no ar no GitHub Pages | verificação manual pelo usuário | ✅ confirmado |
+
+**Desvios e acréscimos (aprovados durante a implementação):**
+- Lint com `oxlint` (padrão do template atual do Vite) em vez de ESLint.
+- Modelo `gemini-3.8-flash`, com `gemini-flash-latest` como reserva.
+- Em 503: uma nova tentativa após 2,5 s e depois o modelo reserva; mensagem própria de sobrecarga.
+- Timeout de 45 s por tentativa (era ~20 s).
+- Só o 400 com "API key not valid" vira "Chave inválida"; outros 400 mostram o detalhe do Gemini.
+- Git: `git init` e commits feitos conforme o plano.
