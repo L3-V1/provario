@@ -2,7 +2,7 @@
 export const GEMINI_MODEL = 'gemini-3.8-flash'
 
 const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models'
-const TIMEOUT_MS = 20_000
+const TIMEOUT_MS = 45_000
 
 export type GeminiErrorKind =
   | 'invalid-key'
@@ -60,7 +60,10 @@ export async function testConnection(apiKey: string): Promise<ConnectionResult> 
       apiKey,
       {
         contents: [{ parts: [{ text: 'Responda apenas: OK' }] }],
-        generationConfig: { maxOutputTokens: 16 },
+        generationConfig: {
+          maxOutputTokens: 64,
+          thinkingConfig: { thinkingLevel: 'minimal' },
+        },
       },
       controller.signal,
     )
