@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { GEMINI_MODEL, testConnection } from './gemini'
+import { GEMINI_FALLBACK_MODEL, GEMINI_MODEL, RETRY_DELAY_MS, testConnection } from './gemini'
 
 function mockFetch(impl: typeof fetch) {
   const fn = vi.fn(impl)
@@ -69,11 +69,49 @@ describe('testConnection', () => {
     expect(!r.ok && r.message).toContain('Limite do plano gratuito')
   })
 
-  it('503 → serviço indisponível', async () => {
-    mockFetch(async () => jsonResponse(503, { error: {} }))
+  it('503 persistente → tenta 2x em cada modelo e mostra mensagem de sobrecarga', async () => {
+    vi.useFakeTimers()
+    const fn = mockFetch(async () => jsonResponse(503, { error: {} }))
+    const p = testConnection('x')
+    await vi.advanceTimersByTimeAsync(RETRY_DELAY_MS * 2 + 100)
+    const r = await p
+    expect(r).toMatchObject({ ok: false, kind: 'overloaded' })
+    expect(!r.ok && r.message).toContain('sobrecarregado')
+    const urls = fn.mock.calls.map((c) => String(c[0]))
+    expect(urls).toHaveLength(4)
+    expect(urls[0]).toContain(GEMINI_MODEL)
+    expect(urls[1]).toContain(GEMINI_MODEL)
+    expect(urls[2]).toContain(GEMINI_FALLBACK_MODEL)
+    expect(urls[3]).toContain(GEMINI_FALLBACK_MODEL)
+  })
+
+  it('503 e depois sucesso no retry do mesmo modelo → ok', async () => {
+    vi.useFakeTimers()
+    let n = 0
+    const fn = mockFetch(async () => (n++ === 0 ? jsonResponse(503, {}) : jsonResponse(200, {})))
+    const p = testConnection('x')
+    await vi.advanceTimersByTimeAsync(RETRY_DELAY_MS + 100)
+    expect(await p).toEqual({ ok: true })
+    expect(fn).toHaveBeenCalledTimes(2)
+  })
+
+  it('503 no modelo principal e sucesso no reserva → ok', async () => {
+    vi.useFakeTimers()
+    const fn = mockFetch(async (url) =>
+      String(url).includes(GEMINI_FALLBACK_MODEL) ? jsonResponse(200, {}) : jsonResponse(503, {}),
+    )
+    const p = testConnection('x')
+    await vi.advanceTimersByTimeAsync(RETRY_DELAY_MS * 2 + 100)
+    expect(await p).toEqual({ ok: true })
+    expect(fn).toHaveBeenCalledTimes(3)
+  })
+
+  it('500 → serviço indisponível, sem retry', async () => {
+    const fn = mockFetch(async () => jsonResponse(500, { error: {} }))
     const r = await testConnection('x')
     expect(r).toMatchObject({ ok: false, kind: 'unavailable' })
     expect(!r.ok && r.message).toContain('indisponível')
+    expect(fn).toHaveBeenCalledTimes(1)
   })
 
   it('falha de rede (TypeError) → sem conexão', async () => {
