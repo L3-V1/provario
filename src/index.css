@@ -15,7 +15,7 @@
   --color-santos: #006b3a;
   --color-santos-escuro: #004d2a;
   --color-santos-claro: #dcefe0;
-  --color-capa: #cfe3d2;
+  --color-capa: #86977f;
   --color-capa-escura: #b5d3ba;
   --color-folha: #f4f7ef;
   --color-quadricula: #dce9dc;
@@ -44,12 +44,9 @@
 
   body {
     @apply bg-capa font-sans text-tinta antialiased;
-    /* Papelão prensado da capa do fichário. */
-    background-image: repeating-linear-gradient(
-      135deg,
-      transparent 0 7px,
-      color-mix(in srgb, var(--color-capa-escura) 45%, transparent) 7px 8px
-    );
+    /* Capa do fichário: textura pontilhada da identidade da Prefeitura. */
+    background-image: url('./images/fundo-base.png');
+    background-size: 1690px auto;
     font-size: 1.0625rem;
     line-height: 1.6;
   }
