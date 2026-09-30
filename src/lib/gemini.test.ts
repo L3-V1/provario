@@ -35,6 +35,14 @@ describe('testConnection', () => {
     expect(init!.method).toBe('POST')
   })
 
+  it('pede raciocínio mínimo e poucos tokens no teste de conexão', async () => {
+    const fn = mockFetch(async () => jsonResponse(200, {}))
+    await testConnection('x')
+    const body = JSON.parse(fn.mock.calls[0][1]!.body as string)
+    expect(body.generationConfig.thinkingConfig).toEqual({ thinkingLevel: 'minimal' })
+    expect(body.generationConfig.maxOutputTokens).toBeLessThanOrEqual(64)
+  })
+
   it('400 API_KEY_INVALID → chave inválida', async () => {
     mockFetch(async () =>
       jsonResponse(400, { error: { status: 'INVALID_ARGUMENT', details: [{ reason: 'API_KEY_INVALID' }] } }),
@@ -88,7 +96,7 @@ describe('testConnection', () => {
         }),
     )
     const p = testConnection('x')
-    await vi.advanceTimersByTimeAsync(21_000)
+    await vi.advanceTimersByTimeAsync(46_000)
     const r = await p
     expect(r).toMatchObject({ ok: false, kind: 'timeout' })
   })
