@@ -11,7 +11,7 @@ type Retorno = { tipo: 'sucesso' | 'erro'; texto: string }
 const passos = [
   <>
     Acesse{' '}
-    <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" className="link [overflow-wrap:anywhere]">
+    <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" className="link wrap-anywhere">
       aistudio.google.com/apikey
       <Icone nome="externo" className="ml-1 inline size-4 align-[-2px]" />
     </a>{' '}
@@ -49,11 +49,11 @@ export default function Configuracoes() {
     setTesting(true)
     setRetorno(null)
     const result = await testConnection(settings.geminiApiKey)
-    setRetorno(
-      result.ok
-        ? { tipo: 'sucesso', texto: 'Conexão com o Gemini funcionando.' }
-        : { tipo: 'erro', texto: result.message },
-    )
+    if (result.ok) {
+      setRetorno({ tipo: 'sucesso', texto: 'Conexão com o Gemini funcionando.' })
+    } else {
+      setRetorno({ tipo: 'erro', texto: (result as any).message })
+    }
     setTesting(false)
   }
 

@@ -41,7 +41,7 @@ describe('testConnection', () => {
     )
     const r = await testConnection('x')
     expect(r).toMatchObject({ ok: false, kind: 'invalid-key' })
-    expect(!r.ok && r.message).toContain('Chave inválida')
+    if (!r.ok) expect((r as any).message).toContain('Chave inválida')
   })
 
   it('400 por outro motivo NÃO vira "chave inválida" e mostra o detalhe', async () => {
@@ -50,8 +50,10 @@ describe('testConnection', () => {
     )
     const r = await testConnection('x')
     expect(r).toMatchObject({ ok: false, kind: 'unknown' })
-    expect(!r.ok && r.message).toContain('Parâmetro X não suportado')
-    expect(!r.ok && r.message).not.toContain('Chave inválida')
+    if (!r.ok) {
+      expect((r as any).message).toContain('Parâmetro X não suportado')
+      expect((r as any).message).not.toContain('Chave inválida')
+    }
   })
 
   it('403 → chave inválida ou sem permissão', async () => {
@@ -68,7 +70,7 @@ describe('testConnection', () => {
     mockFetch(async () => jsonResponse(429, { error: {} }))
     const r = await testConnection('x')
     expect(r).toMatchObject({ ok: false, kind: 'rate-limit' })
-    expect(!r.ok && r.message).toContain('Limite do plano gratuito')
+    if (!r.ok) expect((r as any).message).toContain('Limite do plano gratuito')
   })
 
   it('503 persistente → tenta 2x em cada modelo e mostra mensagem de sobrecarga', async () => {
@@ -78,7 +80,7 @@ describe('testConnection', () => {
     await vi.advanceTimersByTimeAsync(RETRY_DELAY_MS * 2 + 100)
     const r = await p
     expect(r).toMatchObject({ ok: false, kind: 'overloaded' })
-    expect(!r.ok && r.message).toContain('sobrecarregado')
+    if (!r.ok) expect((r as any).message).toContain('sobrecarregado')
     const urls = fn.mock.calls.map((c) => String(c[0]))
     expect(urls).toHaveLength(4)
     expect(urls[0]).toContain(GEMINI_MODEL)
@@ -112,7 +114,7 @@ describe('testConnection', () => {
     const fn = mockFetch(async () => jsonResponse(500, { error: {} }))
     const r = await testConnection('x')
     expect(r).toMatchObject({ ok: false, kind: 'unavailable' })
-    expect(!r.ok && r.message).toContain('indisponível')
+    if (!r.ok) expect((r as any).message).toContain('indisponível')
     expect(fn).toHaveBeenCalledTimes(1)
   })
 
@@ -122,7 +124,7 @@ describe('testConnection', () => {
     })
     const r = await testConnection('x')
     expect(r).toMatchObject({ ok: false, kind: 'network' })
-    expect(!r.ok && r.message).toContain('Sem conexão')
+    if (!r.ok) expect((r as any).message).toContain('Sem conexão')
   })
 
   it('timeout → mensagem própria', async () => {
@@ -145,6 +147,6 @@ describe('testConnection', () => {
     mockFetch(async () => jsonResponse(418, { error: {} }))
     const r = await testConnection('x')
     expect(r).toMatchObject({ ok: false, kind: 'unknown' })
-    expect(!r.ok && r.message).toContain('418')
+    if (!r.ok) expect((r as any).message).toContain('418')
   })
 })

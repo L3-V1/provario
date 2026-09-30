@@ -43,7 +43,7 @@ export default function Aviso({
       <span className={`flex w-8 shrink-0 sm:w-10 items-start justify-center pt-3 ${e.selo}`}>
         <Icone nome={e.icone} />
       </span>
-      <div className="min-w-0 flex-1 px-3 py-2.5 font-semibold break-words">{children}</div>
+      <div className="min-w-0 flex-1 px-3 py-2.5 font-semibold wrap-break-word">{children}</div>
     </div>
   )
 }
