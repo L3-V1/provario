@@ -65,6 +65,9 @@ export const EXAMS_KEY = 'exams'
 export const DEFAULT_EXAMS: ExamsData = { version: 1, provas: [] }
 export const EXAM_DEFAULTS_KEY = 'exam-defaults'
 
+/** `modelo` das provas montadas a partir da resposta colada de um chat de IA. */
+export const MODELO_MANUAL = 'manual'
+
 export const QUANTIDADE_MIN = 1
 export const QUANTIDADE_MAX = 20
 
@@ -110,6 +113,28 @@ export function duplicateExam(exam: Exam, agora: string, id: string = crypto.ran
     params: { ...exam.params },
     perfil: { ...exam.perfil },
     questoes: exam.questoes.map((q) => ({ ...q, alternativas: [...q.alternativas] })),
+    criadoEm: agora,
+    atualizadoEm: agora,
+  }
+}
+
+/** Prova nova com snapshot do perfil: editar ou excluir o perfil depois não a altera. */
+export function createExam(
+  params: ExamParams,
+  perfil: Profile,
+  questoes: Question[],
+  modelo: string,
+  agora: string,
+  id: string = crypto.randomUUID(),
+): Exam {
+  const { id: perfilId, nome, escola, secretaria, logo, professora, anoLetivo } = perfil
+  return {
+    id,
+    titulo: params.titulo || defaultTitle(params),
+    params,
+    perfil: { id: perfilId, nome, escola, secretaria, logo, professora, anoLetivo },
+    questoes,
+    modelo,
     criadoEm: agora,
     atualizadoEm: agora,
   }

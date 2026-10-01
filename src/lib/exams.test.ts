@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_EXAMS,
+  MODELO_MANUAL,
   addExam,
+  createExam,
   defaultTitle,
   initialParams,
   letraAlternativa,
@@ -418,5 +420,43 @@ describe('duplicateExam', () => {
     expect(copia.questoes[0].alternativas).not.toBe(original.questoes[0].alternativas)
     copia.questoes[0].alternativas[0] = 'mudou'
     expect(original.questoes[0].alternativas[0]).not.toBe('mudou')
+  })
+})
+
+describe('createExam', () => {
+  const questoes: Question[] = [{ enunciado: 'Q?', alternativas: ['a', 'b', 'c', 'd'], correta: 2 }]
+  const agora = '2026-10-01T12:00:00.000Z'
+
+  it('monta a prova com snapshot do perfil (sem as datas dele), modelo e datas de agora', () => {
+    const dono = perfil({ id: 'p1', nome: 'Manhã', escola: 'Escola Alfa', logo: 'data:x', professora: 'Ana' })
+    const exam = createExam(params(), dono, questoes, MODELO_MANUAL, agora, 'id-1')
+    expect(exam).toEqual({
+      id: 'id-1',
+      titulo: 'Avaliação de Ciências — 7º ano',
+      params: params(),
+      perfil: {
+        id: 'p1',
+        nome: 'Manhã',
+        escola: 'Escola Alfa',
+        secretaria: '',
+        logo: 'data:x',
+        professora: 'Ana',
+        anoLetivo: '2026',
+      },
+      questoes,
+      modelo: 'manual',
+      criadoEm: agora,
+      atualizadoEm: agora,
+    })
+  })
+
+  it('usa o título informado e o modelo recebido; o snapshot é independente do perfil', () => {
+    const dono = perfil({ nome: 'Tarde' })
+    const exam = createExam(params({ titulo: 'Prova 1' }), dono, questoes, 'gemini-x', agora)
+    expect(exam.titulo).toBe('Prova 1')
+    expect(exam.modelo).toBe('gemini-x')
+    expect(exam.id).toMatch(/^[0-9a-f-]{36}$/)
+    dono.nome = 'Mudou'
+    expect(exam.perfil.nome).toBe('Tarde')
   })
 })

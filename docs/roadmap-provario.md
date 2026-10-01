@@ -14,6 +14,7 @@ Uma professora de Ciências do Ensino Fundamental II da rede pública de Santos 
 - **Usuária única, sem login.** O app atende só a professora. Se outros professores quiserem usar, cada um configura o seu próprio navegador.
 - **Sem backend.** O GitHub Pages hospeda só arquivos estáticos, e toda a lógica roda no navegador.
 - **IA: Google Gemini, com a chave da própria professora.** A chave é colada numa tela de configurações e salva só no navegador. O plano gratuito do Gemini deixa o custo em zero e dispensa um servidor para esconder a chave.
+- **Modo manual como alternativa ao Gemini.** Como o Gemini fica muitas vezes lento ou sobrecarregado, a professora pode copiar o prompt, colar no chat de IA que preferir (ChatGPT, Claude, Gemini web) e colar a resposta de volta no app, que valida e monta a prova. Funciona mesmo sem chave configurada e mantém o custo em zero.
 - **Vários perfis institucionais.** É comum professor da rede pública dar aula em mais de uma escola, então ela escolhe o perfil a cada prova.
 - **Campos do perfil:** nome do perfil, nome da escola, secretaria/rede, logo (upload de imagem), nome da professora e ano/período letivo.
 - **Parâmetros da prova:** perfil, disciplina (padrão Ciências, editável), ano/série (6º ao 9º) e turma(s), conteúdo (texto livre), quantidade de questões (1 a 20), alternativas por questão (4 ou 5), dificuldade (fácil, média, difícil ou mista), título da prova e observações extras para a IA (opcional).
@@ -36,7 +37,7 @@ Uma professora de Ciências do Ensino Fundamental II da rede pública de Santos 
 - Versões A/B embaralhadas
 - Folha de respostas para o aluno
 - Alinhamento com habilidades da BNCC ou do Currículo Paulista
-- Outros provedores de IA
+- Outros provedores de IA por API (Claude, OpenAI, Groq, OpenRouter): as APIs do Claude e da OpenAI não têm plano gratuito e quebrariam o custo zero; o modo manual cobre a indisponibilidade do Gemini
 - Sincronização em nuvem ou login
 - Questões discursivas
 
@@ -51,6 +52,7 @@ Uma professora de Ciências do Ensino Fundamental II da rede pública de Santos 
 | 4 | Pré-visualização e impressão | Layout da prova com cabeçalho e gabarito em página separada, pronto para imprimir ou salvar em PDF | 3 |
 | 5 | Revisão e edição de questões | Edição de questões, troca de gabarito, exclusão e regeração de uma questão isolada | 3, 4 |
 | 6 | Histórico e backup | Lista de provas salvas, com reabrir, reimprimir, duplicar e excluir, e exportação/importação de backup | 3 |
+| 7 | Modo manual e resiliência da IA | Gerar e regerar questões copiando o prompt para qualquer chat de IA e colando a resposta, e o Gemini falhando mais rápido | 3, 5 |
 
 ## Fase 1 — Fundação, deploy e conexão com o Gemini
 **Status:** concluída
@@ -144,11 +146,31 @@ Uma professora de Ciências do Ensino Fundamental II da rede pública de Santos 
 - Duplicar gera uma cópia independente
 - Exportar, limpar os dados do navegador e importar restaura perfis e provas por completo
 
+## Fase 7 — Modo manual e resiliência da IA
+**Status:** concluída
+**Objetivo:** Fazer com que a indisponibilidade do Gemini (lentidão, timeouts e sobrecarga) nunca bloqueie a professora, mantendo o custo zero. As APIs pagas (Claude, OpenAI) ficaram de fora por causa do custo.
+**Entregas:**
+- Botão "Usar outra IA (copiar e colar)", sempre visível na nova prova ao lado de "Gerar", que funciona mesmo sem chave do Gemini configurada; o erro do Gemini também sugere esse caminho
+- Tela do modo manual: prompt completo com botão "Copiar", e uma caixa para colar a resposta do chat de IA que a professora preferir
+- Prompt manual com as mesmas instruções pedagógicas e o formato JSON escrito no próprio texto, com exemplo (hoje o formato só vai no `responseSchema` da API)
+- Leitura da resposta colada tolerante na extração (ignora blocos de código e texto antes ou depois do JSON) e estrita na validação, reaproveitando `parseExamResponse` e `parseQuestionResponse`
+- Erro específico quando a resposta não serve (por exemplo, "vieram 8 questões, eram esperadas 10"), mantendo o texto colado na caixa
+- "Regerar questão" com o mesmo fluxo manual, usando o prompt de uma questão e a regra de não repetir as existentes
+- Provas geradas pelo modo manual salvas com `modelo: 'manual'`
+- Gemini falhando mais rápido: teto total de cerca de 60 s somando as tentativas, um modelo Flash-Lite como reserva e, na falha, oferta do modo manual já com o prompt pronto
+**Depende de:** Fases 3 e 5
+**Critérios de conclusão:**
+- Sem chave do Gemini, é possível gerar uma prova completa colando a resposta de um chat de IA externo
+- Uma resposta colada fora do formato ou com contagem errada mostra o que está errado e não perde o texto colado
+- Regerar uma questão pelo modo manual troca só aquela questão e atualiza o gabarito
+- Quando o Gemini falha, a professora espera no máximo cerca de 60 s e recebe a oferta do modo manual
+**Pendências:** resolvidas no plano da fase: reserva `gemini-3.5-flash-lite` (confirmado em 01/10/2026), prazo total de 60 s (até ~35 s no modelo principal) e links para ChatGPT, Claude e Gemini em nova aba ao lado do prompt
+
 ## Evolução futura
 - Upload manual de imagem por questão
 - Versões A/B com questões embaralhadas e gabaritos próprios
 - Folha de respostas para o aluno
 - Alinhamento com habilidades da BNCC ou do Currículo Paulista
-- Suporte a outros provedores de IA (Claude, OpenAI)
+- Suporte a outros provedores de IA por API (Claude, OpenAI), caso a professora aceite pagar pelo uso
 - Sincronização em nuvem entre computadores
 - Questões discursivas

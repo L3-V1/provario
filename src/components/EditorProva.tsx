@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { letraAlternativa, type Question, type QuestionErrors } from '../lib/exams'
 import CampoTexto from './CampoTexto'
 import Icone from './Icone'
@@ -13,6 +14,8 @@ export default function EditorProva({
   onChange,
   onExcluir,
   onRegerar,
+  onRegerarManual,
+  painel,
 }: {
   questoes: Question[]
   erros: QuestionErrors
@@ -22,6 +25,10 @@ export default function EditorProva({
   onChange: (i: number, questao: Question) => void
   onExcluir: (i: number) => void
   onRegerar: (i: number) => void
+  /** Abre o modo manual (copiar e colar) da questão `i`; funciona sem chave. */
+  onRegerarManual: (i: number) => void
+  /** Conteúdo mostrado no fim do cartão da questão `indice` (o painel do modo manual). */
+  painel?: { indice: number; conteudo: ReactNode }
 }) {
   const ocupado = regerando !== null
   return (
@@ -107,6 +114,15 @@ export default function EditorProva({
                 </button>
                 <button
                   type="button"
+                  className="btn btn-secundario"
+                  aria-label={`Regerar com outra IA a questão ${n}`}
+                  onClick={() => onRegerarManual(i)}
+                >
+                  <Icone nome="copiar" />
+                  Regerar com outra IA
+                </button>
+                <button
+                  type="button"
                   className="btn btn-perigo-contorno"
                   disabled={questoes.length <= 1}
                   aria-label={`Excluir questão ${n}`}
@@ -116,6 +132,7 @@ export default function EditorProva({
                   Excluir questão
                 </button>
               </div>
+              {painel?.indice === i && painel.conteudo}
             </div>
           </section>
         )

@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import type { ExamParams } from './exams'
 import type { Question } from './exams'
-import { buildExamPrompt, buildQuestionPrompt, examResponseSchema, letras, questionResponseSchema } from './examPrompt'
+import {
+  buildExamPrompt,
+  buildManualExamPrompt,
+  buildManualQuestionPrompt,
+  buildQuestionPrompt,
+  examResponseSchema,
+  letras,
+  questionResponseSchema,
+} from './examPrompt'
 
 function params(over: Partial<ExamParams> = {}): ExamParams {
   return {
@@ -143,5 +151,91 @@ describe('questionResponseSchema', () => {
   it('é o mesmo formato de cada item do schema da prova', () => {
     const item = examResponseSchema(params({ alternativas: 4 })).properties.questoes.items
     expect(questionResponseSchema(4)).toEqual(item)
+  })
+})
+
+/** O exemplo JSON do prompt manual: do primeiro "{" ao último "}" (sem observações no fim). */
+function exemplo(prompt: string): unknown {
+  return JSON.parse(prompt.slice(prompt.indexOf('{'), prompt.lastIndexOf('}') + 1))
+}
+
+describe('buildManualExamPrompt', () => {
+  it('mantém o pedido, a quantidade e as regras pedagógicas do prompt do Gemini', () => {
+    const p = buildManualExamPrompt(params({ quantidade: 10, alternativas: 5 }))
+    expect(p).toContain('Organelas celulares')
+    expect(p).toContain('7º ano')
+    expect(p).toContain('exatamente 10 questões')
+    expect(p).toContain('exatamente 5 alternativas')
+    expect(p).toContain('Regras pedagógicas:')
+    expect(p).toMatch(/distratores/)
+    expect(p).toContain('- Não use "todas as anteriores", "nenhuma das anteriores" nem combinações como "a e b estão corretas".')
+  })
+
+  it('descreve o formato JSON no texto: sem texto ao redor, campos e letras certas', () => {
+    const p = buildManualExamPrompt(params({ quantidade: 10, alternativas: 4 }))
+    expect(p).toContain('Responda apenas com um objeto JSON, sem texto antes ou depois e sem bloco de código.')
+    expect(p).toMatch(/"questoes".*exatamente 10/)
+    expect(p).toMatch(/"alternativas".*exatamente 4/)
+    expect(p).toContain('A, B, C ou D')
+    expect(p).not.toContain('Responda somente com o JSON no formato pedido')
+  })
+
+  it.each([4, 5] as const)('traz um exemplo JSON válido com %i alternativas e a correta como letra', (k) => {
+    const ex = exemplo(buildManualExamPrompt(params({ alternativas: k }))) as {
+      questoes: { enunciado: string; alternativas: string[]; correta: string }[]
+    }
+    expect(ex.questoes).toHaveLength(1)
+    expect(ex.questoes[0].enunciado).toBeTruthy()
+    expect(ex.questoes[0].alternativas).toHaveLength(k)
+    expect(letras(k)).toContain(ex.questoes[0].correta)
+  })
+
+  it('5 alternativas aceita a letra E', () => {
+    expect(buildManualExamPrompt(params({ alternativas: 5 }))).toContain('A, B, C, D ou E')
+  })
+
+  it('as observações da professora continuam no fim', () => {
+    const p = buildManualExamPrompt(params({ observacoes: 'Use exemplos de Santos' }))
+    expect(p.endsWith('"""\nUse exemplos de Santos\n"""')).toBe(true)
+    expect(p.indexOf('Exemplo')).toBeLessThan(p.indexOf('Use exemplos de Santos'))
+  })
+})
+
+describe('buildManualQuestionPrompt', () => {
+  const outras = [questao('Enunciado da outra A'), questao('Enunciado da outra B')]
+  const atual = questao('Enunciado da questão atual', 5)
+
+  it('lista os enunciados existentes e manda não repetir', () => {
+    const p = buildManualQuestionPrompt(params(), outras, atual)
+    expect(p).toMatch(/não repita/i)
+    for (const e of ['Enunciado da outra A', 'Enunciado da outra B', 'Enunciado da questão atual']) expect(p).toContain(e)
+    expect(p).toContain('exatamente 1 questão')
+    expect(p).toContain('Regras pedagógicas:')
+  })
+
+  it('o exemplo é a própria questão, sem `questoes`, com o nº de alternativas da atual', () => {
+    const p = buildManualQuestionPrompt(params({ alternativas: 4 }), outras, atual)
+    expect(p).toContain('Responda apenas com um objeto JSON, sem texto antes ou depois e sem bloco de código.')
+    expect(p).not.toMatch(/"questoes"/)
+    const ex = exemplo(p) as { enunciado: string; alternativas: string[]; correta: string }
+    expect(ex.alternativas).toHaveLength(5)
+    expect(letras(5)).toContain(ex.correta)
+    expect(p).toContain('A, B, C, D ou E')
+  })
+
+  it('observações no fim', () => {
+    const p = buildManualQuestionPrompt(params({ observacoes: 'Sem cálculos' }), outras, atual)
+    expect(p.endsWith('"""\nSem cálculos\n"""')).toBe(true)
+  })
+})
+
+describe('prompts do Gemini continuam sem o formato no texto', () => {
+  it('sem exemplo e com a linha de sempre', () => {
+    const linha = 'Responda somente com o JSON no formato pedido. Indique a alternativa correta pela letra (A, B, C…).'
+    for (const p of [buildExamPrompt(params()), buildQuestionPrompt(params(), [], questao('Atual'))]) {
+      expect(p).toContain(linha)
+      expect(p).not.toContain('Exemplo')
+      expect(p).not.toContain('{')
+    }
   })
 })

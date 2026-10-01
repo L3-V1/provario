@@ -606,3 +606,181 @@ describe('Prova — regerar questão', () => {
     expect(prompt).toContain('Texto editado e ainda não salvo')
   })
 })
+
+const questaoColada = (over: Record<string, unknown> = {}) =>
+  JSON.stringify({
+    enunciado: 'Pergunta colada?',
+    alternativas: ['m1', 'm2', 'm3', 'm4', 'm5'],
+    correta: 'D',
+    ...over,
+  })
+
+const cartao = (n: number) => screen.getByRole('region', { name: `Questão ${n}` })
+const painelManual = (n: number) => screen.getByRole('region', { name: `Regerar a questão ${n} com outra IA` })
+const botaoManual = (n: number) => screen.getByRole('button', { name: `Regerar com outra IA a questão ${n}` })
+
+async function colarNoPainel(n: number, texto: string) {
+  await userEvent.click(within(painelManual(n)).getByLabelText(/Resposta da IA/))
+  await userEvent.paste(texto)
+}
+
+describe('Prova — regerar com outra IA (copiar e colar)', () => {
+  it('Dado que não há chave, quando regera a questão 2 colando uma questão válida, então troca só a 2 e o gabarito muda ao salvar', async () => {
+    semear()
+    const fn = mockFetch(async () => respostaQuestao())
+    renderProva()
+    await entrarEmEdicao()
+
+    expect(screen.getByRole('button', { name: /Regerar questão 2/ })).toBeDisabled()
+    expect(botaoManual(2)).toBeEnabled()
+    await userEvent.click(botaoManual(2))
+
+    const painel = painelManual(2)
+    expect(cartao(2)).toContainElement(painel)
+    const prompt = (within(painel).getByLabelText('Prompt') as HTMLTextAreaElement).value
+    for (let i = 1; i <= 5; i++) expect(prompt).toContain(`Pergunta ${i} sobre células?`)
+    expect(prompt).toContain('exatamente 5 alternativas')
+    expect(prompt).toContain('Responda apenas com um objeto JSON')
+
+    await colarNoPainel(2, `Segue a questão:\n${questaoColada()}`)
+    await userEvent.click(within(painel).getByRole('button', { name: 'Trocar questão' }))
+
+    expect(screen.queryByRole('region', { name: /com outra IA/ })).not.toBeInTheDocument()
+    expect(enunciado(2)).toHaveValue('Pergunta colada?')
+    expect(alternativa(2, 'a')).toHaveValue('m1')
+    expect(screen.getByRole('radio', { name: 'Marcar alternativa d como correta da questão 2' })).toBeChecked()
+    for (const n of [1, 3, 4, 5]) expect(enunciado(n)).toHaveValue(`Pergunta ${n} sobre células?`)
+    expect(screen.getByText('Questão 2 regerada.')).toBeInTheDocument()
+    expect(lerSalvo()).toEqual(prova()) // ainda é só rascunho
+
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar alterações' }))
+    expect(screen.getByText('2. Pergunta colada?')).toBeInTheDocument()
+    expect(gabarito()).toEqual(['1 – a', '2 – d', '3 – c', '4 – d', '5 – e'])
+    expect(lerSalvo().questoes[1]).toEqual({ enunciado: 'Pergunta colada?', alternativas: ['m1', 'm2', 'm3', 'm4', 'm5'], correta: 3 })
+    expect(lerSalvo().modelo).toBe('gemini') // a regeração não muda a origem da prova
+    expect(fn).not.toHaveBeenCalled()
+  })
+
+  it('"Desfazer" volta a questão anterior', async () => {
+    semear()
+    renderProva()
+    await entrarEmEdicao()
+    await userEvent.click(botaoManual(3))
+    await colarNoPainel(3, questaoColada())
+    await userEvent.click(within(painelManual(3)).getByRole('button', { name: 'Trocar questão' }))
+    expect(enunciado(3)).toHaveValue('Pergunta colada?')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Desfazer' }))
+    expect(enunciado(3)).toHaveValue('Pergunta 3 sobre células?')
+    expect(alternativa(3, 'a')).toHaveValue('Opção 3.1')
+    expect(screen.getByRole('radio', { name: 'Marcar alternativa c como correta da questão 3' })).toBeChecked()
+  })
+
+  it('Quando cola uma questão repetida, mostra o erro, mantém o texto e não troca', async () => {
+    semear()
+    renderProva()
+    await entrarEmEdicao()
+    await userEvent.click(botaoManual(2))
+    const colado = questaoColada({ enunciado: 'pergunta 4 sobre células?' })
+    await colarNoPainel(2, colado)
+    await userEvent.click(within(painelManual(2)).getByRole('button', { name: 'Trocar questão' }))
+
+    expect(within(painelManual(2)).getByText('A questão nova repete uma que já está na prova.')).toBeInTheDocument()
+    expect(within(painelManual(2)).getByLabelText(/Resposta da IA/)).toHaveValue(colado)
+    expect(enunciado(2)).toHaveValue('Pergunta 2 sobre células?')
+    expect(screen.queryByRole('button', { name: 'Desfazer' })).not.toBeInTheDocument()
+  })
+
+  it('Quando cola uma questão com nº errado de alternativas, explica o motivo', async () => {
+    semear()
+    renderProva()
+    await entrarEmEdicao()
+    await userEvent.click(botaoManual(1))
+    await colarNoPainel(1, questaoColada({ alternativas: ['a', 'b', 'c', 'd'] }))
+    await userEvent.click(within(painelManual(1)).getByRole('button', { name: 'Trocar questão' }))
+    expect(within(painelManual(1)).getByText(/não tem 5 alternativas/)).toBeInTheDocument()
+  })
+
+  it('Dado erro de regeração pelo Gemini, o aviso oferece regerar aquela questão com outra IA', async () => {
+    semear()
+    semearChave()
+    mockFetch(async () => new Response('{}', { status: 503 }))
+    renderProva()
+    await entrarEmEdicao()
+    await userEvent.click(screen.getByRole('button', { name: /Regerar questão 4/ }))
+
+    const erro = await screen.findByRole('alert')
+    expect(erro).toHaveTextContent('sobrecarregado')
+    await userEvent.click(within(erro).getByRole('button', { name: 'Regerar com outra IA' }))
+    expect(cartao(4)).toContainElement(painelManual(4))
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('Dado que não há chave, o aviso explica as duas formas de regerar', async () => {
+    semear()
+    renderProva()
+    await entrarEmEdicao()
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Para regerar com o Gemini, configure a chave. Ir para Configurações Você também pode regerar com outra IA (copiar e colar).',
+    )
+  })
+
+  it('"Cancelar" fecha o painel sem mexer na questão', async () => {
+    semear()
+    renderProva()
+    await entrarEmEdicao()
+    await userEvent.click(botaoManual(2))
+    await userEvent.click(within(painelManual(2)).getByRole('button', { name: 'Cancelar' }))
+    expect(screen.queryByRole('region', { name: /com outra IA/ })).not.toBeInTheDocument()
+    expect(enunciado(2)).toHaveValue('Pergunta 2 sobre células?')
+  })
+
+  it('O painel fecha ao excluir uma questão', async () => {
+    semear()
+    renderProva()
+    await entrarEmEdicao()
+    await userEvent.click(botaoManual(2))
+    await userEvent.click(screen.getByRole('button', { name: /Excluir questão 1/ }))
+    await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Excluir questão' }))
+    expect(screen.queryByRole('region', { name: /com outra IA/ })).not.toBeInTheDocument()
+  })
+
+  it('O painel fecha ao regerar com o Gemini', async () => {
+    semear()
+    semearChave()
+    mockFetch(async () => respostaQuestao())
+    renderProva()
+    await entrarEmEdicao()
+    await userEvent.click(botaoManual(2))
+    await userEvent.click(screen.getByRole('button', { name: /Regerar questão 3/ }))
+    expect(screen.queryByRole('region', { name: /com outra IA/ })).not.toBeInTheDocument()
+    await waitFor(() => expect(enunciado(3)).toHaveValue('Pergunta regerada?'))
+  })
+
+  it('Salvar com o painel aberto grava o rascunho como está e fecha o painel', async () => {
+    semear()
+    renderProva()
+    await entrarEmEdicao()
+    await reescrever(enunciado(1), 'Mudou')
+    await userEvent.click(botaoManual(2))
+    await colarNoPainel(2, questaoColada())
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar alterações' }))
+
+    expect(lerSalvo().questoes[0].enunciado).toBe('Mudou')
+    expect(lerSalvo().questoes[1].enunciado).toBe('Pergunta 2 sobre células?')
+    expect(screen.getByText('Alterações salvas.')).toBeInTheDocument()
+
+    await entrarEmEdicao()
+    expect(screen.queryByRole('region', { name: /com outra IA/ })).not.toBeInTheDocument()
+  })
+
+  it('O painel fecha ao descartar', async () => {
+    semear()
+    renderProva()
+    await entrarEmEdicao()
+    await userEvent.click(botaoManual(2))
+    await userEvent.click(screen.getByRole('button', { name: 'Descartar' }))
+    await entrarEmEdicao()
+    expect(screen.queryByRole('region', { name: /com outra IA/ })).not.toBeInTheDocument()
+  })
+})

@@ -76,12 +76,9 @@ function parseQuestion(item: unknown, n: number, alternativasEsperadas: number):
   return { ok: true, questao: { enunciado, alternativas, correta } }
 }
 
-/** Valida a resposta do Gemini contra o que foi pedido; só devolve questões prontas para salvar. */
-export function parseExamResponse(body: unknown, params: ExamParams): ParseResult {
-  const extraido = extrairDados(body)
-  if (!extraido.ok) return extraido
-
-  const lista = (extraido.dados as { questoes?: unknown } | null)?.questoes
+/** Valida o conteúdo de uma prova (objeto com `questoes`) contra o que foi pedido. */
+export function parseExamData(dados: unknown, params: ExamParams): ParseResult {
+  const lista = (dados as { questoes?: unknown } | null)?.questoes
   if (!Array.isArray(lista) || lista.length !== params.quantidade) {
     return falha('format', `Esperava ${params.quantidade} questões, mas vieram ${Array.isArray(lista) ? lista.length : 0}.`)
   }
@@ -95,14 +92,80 @@ export function parseExamResponse(body: unknown, params: ExamParams): ParseResul
   return { ok: true, questoes }
 }
 
+/** Valida a resposta do Gemini contra o que foi pedido; só devolve questões prontas para salvar. */
+export function parseExamResponse(body: unknown, params: ExamParams): ParseResult {
+  const extraido = extrairDados(body)
+  if (!extraido.ok) return extraido
+  return parseExamData(extraido.dados, params)
+}
+
 export type QuestionParseResult =
   | { ok: true; questao: Question }
   | { ok: false; kind: 'format' | 'blocked' | 'truncated'; motivo: string }
 
+const normalizar = (texto: string) => texto.trim().toLocaleLowerCase('pt-BR')
+
+/** Valida uma questão avulsa; enunciado igual ao de uma das `outras` é recusado. */
+export function parseQuestionData(dados: unknown, alternativas: number, outras: Question[] = []): QuestionParseResult {
+  const r = parseQuestion(dados, 1, alternativas)
+  if (!r.ok) return { ok: false, kind: 'format', motivo: r.motivo }
+  const existentes = new Set(outras.map((q) => normalizar(q.enunciado)))
+  if (existentes.has(normalizar(r.questao.enunciado))) {
+    return { ok: false, kind: 'format', motivo: 'A questão nova repete uma que já está na prova.' }
+  }
+  return r
+}
+
 /** Valida a resposta do Gemini para a regeração de uma única questão. */
-export function parseQuestionResponse(body: unknown, alternativas: number): QuestionParseResult {
+export function parseQuestionResponse(body: unknown, alternativas: number, outras: Question[] = []): QuestionParseResult {
   const extraido = extrairDados(body)
   if (!extraido.ok) return extraido
-  const r = parseQuestion(extraido.dados, 1, alternativas)
-  return r.ok ? r : { ok: false, kind: 'format', motivo: r.motivo }
+  return parseQuestionData(extraido.dados, alternativas, outras)
+}
+
+// Primeiro bloco de código, com ou sem linguagem (```json … ```).
+const BLOCO_DE_CODIGO = /```[\w-]*[^\S\n]*\n?([\s\S]*?)```/
+
+/**
+ * Tira o JSON do texto colado de um chat de IA: tolera bloco de código e texto antes ou depois,
+ * mas não conserta JSON malformado.
+ */
+export function extrairJsonColado(texto: string): { ok: true; dados: unknown } | { ok: false; motivo: string } {
+  if (!texto.trim()) return { ok: false, motivo: 'Cole a resposta do chat de IA.' }
+
+  let candidato = BLOCO_DE_CODIGO.exec(texto)?.[1]
+  if (candidato === undefined) {
+    const inicio = texto.search(/[{[]/)
+    const fim = Math.max(texto.lastIndexOf('}'), texto.lastIndexOf(']'))
+    candidato = inicio >= 0 && fim > inicio ? texto.slice(inicio, fim + 1) : ''
+  }
+  try {
+    return { ok: true, dados: JSON.parse(candidato) }
+  } catch {
+    return {
+      ok: false,
+      motivo: 'Não encontrei um JSON válido na resposta. Copie a resposta inteira do chat, do começo ao fim.',
+    }
+  }
+}
+
+/** Valida a prova colada do chat; aceita também uma lista solta de questões. */
+export function parsePastedExam(texto: string, params: ExamParams): ParseResult {
+  const extraido = extrairJsonColado(texto)
+  if (!extraido.ok) return falha('format', extraido.motivo)
+  const dados = Array.isArray(extraido.dados) ? { questoes: extraido.dados } : extraido.dados
+  return parseExamData(dados, params)
+}
+
+/** Valida a questão colada do chat; aceita também `{ questoes: [uma] }` ou `[uma]`. */
+export function parsePastedQuestion(texto: string, alternativas: number, outras: Question[]): QuestionParseResult {
+  const extraido = extrairJsonColado(texto)
+  if (!extraido.ok) return { ok: false, kind: 'format', motivo: extraido.motivo }
+
+  const { dados } = extraido
+  const lista = Array.isArray(dados) ? dados : (dados as { questoes?: unknown } | null)?.questoes
+  if (Array.isArray(lista) && lista.length !== 1) {
+    return { ok: false, kind: 'format', motivo: `Esperava 1 questão, mas vieram ${lista.length}.` }
+  }
+  return parseQuestionData(Array.isArray(lista) ? lista[0] : dados, alternativas, outras)
 }

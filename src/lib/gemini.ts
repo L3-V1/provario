@@ -4,13 +4,18 @@ import { parseExamResponse, parseQuestionResponse } from './examResponse'
 
 // Modelo Flash estável mais recente confirmado em ai.google.dev/gemini-api/docs/models (30/09/2026).
 export const GEMINI_MODEL = 'gemini-3.8-flash'
-// Plano B quando o modelo principal segue sobrecarregado (503).
-export const GEMINI_FALLBACK_MODEL = 'gemini-flash-latest'
+// Reserva quando o principal está sobrecarregado ou lento: o Flash-Lite estável mais recente
+// confirmado em ai.google.dev/gemini-api/docs/models (01/10/2026).
+export const GEMINI_FALLBACK_MODEL = 'gemini-3.5-flash-lite'
 
 const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models'
-const TIMEOUT_MS = 45_000
-const GENERATION_TIMEOUT_MS = 90_000
-export const RETRY_DELAY_MS = 2_500
+/** Teto de uma geração, somando principal, reserva e a nova tentativa por formato. */
+export const PRAZO_TOTAL_MS = 60_000
+/** Tempo máximo do modelo principal; o resto fica para a reserva. */
+export const PRAZO_PRINCIPAL_MS = 35_000
+/** Abaixo disso não vale começar outra chamada (reserva ou nova tentativa). */
+export const PRAZO_MINIMO_MS = 8_000
+export const PRAZO_TESTE_MS = 20_000
 
 export type GeminiErrorKind =
   | 'invalid-key'
@@ -81,8 +86,6 @@ function mapStatus(status: number): GeminiFailure {
   return fail('unknown', `Não foi possível conectar ao Gemini (erro ${status}).`)
 }
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
-
 async function post(
   model: string,
   apiKey: string,
@@ -103,33 +106,32 @@ async function post(
   }
 }
 
+const isAbort = (err: unknown) => err instanceof DOMException && err.name === 'AbortError'
+
 /**
- * Chama o Gemini. Em 503 (sobrecarga) tenta de novo uma vez no mesmo modelo
- * e, se persistir, passa ao modelo reserva. Outros erros voltam de imediato.
- * Devolve também o modelo que respondeu.
+ * Chama o Gemini até `limite` (epoch ms). O principal tem até `PRAZO_PRINCIPAL_MS`; em sobrecarga,
+ * limite de uso, erro do servidor ou timeout, passa ao Flash-Lite com o tempo que sobrar, se sobrar
+ * pelo menos `PRAZO_MINIMO_MS`. Outros erros voltam de imediato. Devolve também o modelo que respondeu.
  */
 export async function generateContent(
   apiKey: string,
   body: unknown,
-  timeoutMs = TIMEOUT_MS,
+  limite: number,
 ): Promise<{ res: Response; modelo: string }> {
-  let res!: Response
-  let modelo = GEMINI_MODEL
-  for (modelo of [GEMINI_MODEL, GEMINI_FALLBACK_MODEL]) {
-    res = await post(modelo, apiKey, body, timeoutMs)
-    if (res.status !== 503) return { res, modelo }
-    await sleep(RETRY_DELAY_MS)
-    res = await post(modelo, apiKey, body, timeoutMs)
-    if (res.status !== 503) return { res, modelo }
+  const restante = () => limite - Date.now()
+  try {
+    const res = await post(GEMINI_MODEL, apiKey, body, Math.min(PRAZO_PRINCIPAL_MS, restante()))
+    const passarAdiante = res.status === 429 || res.status >= 500
+    if (!passarAdiante || restante() < PRAZO_MINIMO_MS) return { res, modelo: GEMINI_MODEL }
+  } catch (err) {
+    if (!isAbort(err) || restante() < PRAZO_MINIMO_MS) throw err
   }
-  return { res, modelo }
+  return { res: await post(GEMINI_FALLBACK_MODEL, apiKey, body, restante()), modelo: GEMINI_FALLBACK_MODEL }
 }
 
 /** Converte exceções de rede/timeout em resultado de falha. */
 function mapError(err: unknown): GeminiFailure {
-  if (err instanceof DOMException && err.name === 'AbortError') {
-    return fail('timeout', 'O Gemini demorou demais para responder. Tente novamente.')
-  }
+  if (isAbort(err)) return fail('timeout', 'O Gemini não respondeu a tempo.')
   if (err instanceof TypeError) {
     return fail('network', 'Sem conexão com a internet ou o Gemini está inacessível.')
   }
@@ -138,10 +140,14 @@ function mapError(err: unknown): GeminiFailure {
 
 export async function testConnection(apiKey: string): Promise<ConnectionResult> {
   try {
-    const { res } = await generateContent(apiKey, {
-      contents: [{ parts: [{ text: 'Responda apenas: OK' }] }],
-      generationConfig: { maxOutputTokens: 64 },
-    })
+    const { res } = await generateContent(
+      apiKey,
+      {
+        contents: [{ parts: [{ text: 'Responda apenas: OK' }] }],
+        generationConfig: { maxOutputTokens: 64 },
+      },
+      Date.now() + PRAZO_TESTE_MS,
+    )
     return res.ok ? { ok: true } : await mapResponse(res)
   } catch (err) {
     return mapError(err)
@@ -161,7 +167,10 @@ type Validacao<T> =
   | { ok: true; valor: T }
   | { ok: false; kind: 'format' | 'blocked' | 'truncated' }
 
-/** Chama o Gemini e valida a resposta. Fora do formato ganha uma nova tentativa automática; depois disso, erro. */
+/**
+ * Chama o Gemini e valida a resposta, tudo dentro de `PRAZO_TOTAL_MS`. Fora do formato ganha uma
+ * nova tentativa automática, se ainda houver tempo; depois disso, erro.
+ */
 async function gerarValidado<T>(
   apiKey: string,
   body: unknown,
@@ -169,9 +178,11 @@ async function gerarValidado<T>(
 ): Promise<({ ok: true; valor: T; modelo: string }) | GeminiFailure> {
   if (!apiKey.trim()) return fail('missing-key', MSG_SEM_CHAVE)
 
+  const limite = Date.now() + PRAZO_TOTAL_MS
   try {
     for (let tentativa = 0; tentativa < 2; tentativa++) {
-      const { res, modelo } = await generateContent(apiKey, body, GENERATION_TIMEOUT_MS)
+      if (tentativa > 0 && limite - Date.now() < PRAZO_MINIMO_MS) break
+      const { res, modelo } = await generateContent(apiKey, body, limite)
       if (!res.ok) return await mapResponse(res)
       const r = validar(await res.json().catch(() => null))
       if (r.ok) return { ok: true, valor: r.valor, modelo }
@@ -201,8 +212,6 @@ export async function generateExam(apiKey: string, params: ExamParams): Promise<
 
 export type QuestionResult = { ok: true; questao: Question; modelo: string } | GeminiFailure
 
-const normalizar = (texto: string) => texto.trim().toLocaleLowerCase('pt-BR')
-
 /**
  * Pede ao Gemini uma questão nova para ocupar o lugar de `atual`, com o mesmo número de alternativas.
  * Enunciado igual ao de outra questão da prova conta como resposta fora do formato.
@@ -221,12 +230,9 @@ export async function regenerateQuestion(
       responseSchema: questionResponseSchema(alternativas),
     },
   }
-  const existentes = new Set(outras.map((q) => normalizar(q.enunciado)))
   const r = await gerarValidado(apiKey, body, (corpo) => {
-    const p = parseQuestionResponse(corpo, alternativas)
-    if (!p.ok) return p
-    if (existentes.has(normalizar(p.questao.enunciado))) return { ok: false, kind: 'format' }
-    return { ok: true, valor: p.questao }
+    const p = parseQuestionResponse(corpo, alternativas, outras)
+    return p.ok ? { ok: true, valor: p.questao } : p
   })
   return r.ok ? { ok: true, questao: r.valor, modelo: r.modelo } : r
 }

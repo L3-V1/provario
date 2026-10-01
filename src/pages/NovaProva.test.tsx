@@ -311,6 +311,211 @@ describe('Nova prova — geração', () => {
   })
 })
 
+const botaoManual = () => screen.getByRole('button', { name: 'Usar outra IA (copiar e colar)' })
+const painelManual = () => screen.getByRole('region', { name: 'Gerar com outra IA (copiar e colar)' })
+
+function respostaColada(quantidade: number, alternativas = 4) {
+  return JSON.stringify({
+    questoes: Array.from({ length: quantidade }, (_, i) => ({
+      enunciado: `Pergunta colada ${i + 1}?`,
+      alternativas: Array.from({ length: alternativas }, (_, j) => `Opção ${i + 1}.${j + 1}`),
+      correta: String.fromCharCode(65 + (i % alternativas)),
+    })),
+  })
+}
+
+async function colarResposta(texto: string) {
+  const caixa = within(painelManual()).getByLabelText(/Resposta da IA/)
+  await userEvent.click(caixa)
+  await userEvent.paste(texto)
+}
+
+describe('Nova prova — modo manual (outra IA)', () => {
+  it('Dado que não há chave, quando usa outra IA, copia o prompt e cola um JSON válido, então salva a prova com modelo "manual" e abre', async () => {
+    semearPerfis({ id: 'p1', nome: 'Manhã', escola: 'Escola Alfa', professora: 'Ana' })
+    const fn = mockFetch(async () => respostaGemini(1, 4))
+    const router = renderAt('/provas/nova')
+
+    expect(botaoGerar()).toBeDisabled()
+    expect(botaoManual()).toBeEnabled()
+    await preencherConteudo()
+    const qtd = screen.getByLabelText(/Quantidade/)
+    await userEvent.clear(qtd)
+    await userEvent.type(qtd, '3')
+    await userEvent.click(botaoManual())
+
+    const painel = painelManual()
+    const prompt = within(painel).getByLabelText('Prompt') as HTMLTextAreaElement
+    expect(prompt).toHaveAttribute('readonly')
+    expect(prompt.value).toContain('Organelas celulares')
+    expect(prompt.value).toContain('exatamente 3 questões')
+    expect(prompt.value).toContain('Responda apenas com um objeto JSON')
+
+    const writeText = vi.fn(async () => {})
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    await userEvent.click(within(painel).getByRole('button', { name: /Copiar/ }))
+    expect(writeText).toHaveBeenCalledWith(prompt.value)
+    expect(within(painel).getByRole('status')).toHaveTextContent('Prompt copiado.')
+
+    await colarResposta(`Claro! Aqui está:\n\`\`\`json\n${respostaColada(3)}\n\`\`\``)
+    await userEvent.click(within(painel).getByRole('button', { name: 'Montar prova' }))
+
+    await screen.findByRole('heading', { level: 1, name: 'Avaliação de Ciências — 7º ano' })
+    expect(router.state.location.pathname).toMatch(/^\/provas\/[^/]+$/)
+    expect(screen.getByText('1. Pergunta colada 1?')).toBeInTheDocument()
+    expect(within(screen.getByRole('region', { name: /Gabarito/ })).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      '1 – a',
+      '2 – b',
+      '3 – c',
+    ])
+    const salvas = provasSalvas()
+    expect(salvas).toHaveLength(1)
+    expect(salvas[0].modelo).toBe('manual')
+    expect(salvas[0].perfil).toMatchObject({ id: 'p1', escola: 'Escola Alfa', professora: 'Ana' })
+    expect(salvas[0].params).toMatchObject({ conteudo: 'Organelas celulares', quantidade: 3 })
+    expect(fn).not.toHaveBeenCalled()
+  })
+
+  it('Quando cola 8 questões e eram 10, então mostra o motivo, mantém o texto colado e não salva', async () => {
+    semearPerfis({ id: 'p1', nome: 'Manhã' })
+    renderAt('/provas/nova')
+    await preencherConteudo()
+    await userEvent.click(botaoManual())
+    const colado = respostaColada(8)
+    await colarResposta(colado)
+    await userEvent.click(within(painelManual()).getByRole('button', { name: 'Montar prova' }))
+
+    const caixa = within(painelManual()).getByLabelText(/Resposta da IA/)
+    expect(screen.getByText('Esperava 10 questões, mas vieram 8.')).toBeInTheDocument()
+    expect(caixa).toHaveAttribute('aria-invalid', 'true')
+    expect(caixa).toHaveAccessibleDescription(/Esperava 10 questões, mas vieram 8\./)
+    expect(caixa).toHaveValue(colado)
+    expect(provasSalvas()).toEqual([])
+
+    // corrigir o texto tira o erro
+    await userEvent.paste(' ')
+    expect(screen.queryByText('Esperava 10 questões, mas vieram 8.')).not.toBeInTheDocument()
+  })
+
+  it('Quando cola um texto sem JSON, então explica e mantém o texto', async () => {
+    semearPerfis({ id: 'p1', nome: 'Manhã' })
+    renderAt('/provas/nova')
+    await preencherConteudo()
+    await userEvent.click(botaoManual())
+    await colarResposta('Desculpe, não consegui.')
+    await userEvent.click(within(painelManual()).getByRole('button', { name: 'Montar prova' }))
+    expect(screen.getByText(/Não encontrei um JSON válido na resposta/)).toBeInTheDocument()
+    expect(within(painelManual()).getByLabelText(/Resposta da IA/)).toHaveValue('Desculpe, não consegui.')
+  })
+
+  it('Dado formulário inválido, quando usa outra IA, então não abre o painel e foca o campo', async () => {
+    semearPerfis({ id: 'p1', nome: 'Manhã' })
+    renderAt('/provas/nova')
+    await userEvent.click(botaoManual())
+    expect(screen.queryByRole('region', { name: /outra IA/ })).not.toBeInTheDocument()
+    expect(screen.getByLabelText(/Conteúdo/)).toHaveFocus()
+    expect(screen.getByText('Descreva o conteúdo que a prova deve cobrir.')).toBeInTheDocument()
+  })
+
+  it('Dado que não há perfil, então "Usar outra IA" fica desabilitado', () => {
+    renderAt('/provas/nova')
+    expect(botaoManual()).toBeDisabled()
+  })
+
+  it('Com o painel aberto, o formulário fica travado e "Voltar aos parâmetros" destrava', async () => {
+    ambienteCompleto()
+    renderAt('/provas/nova')
+    await preencherConteudo()
+    await userEvent.click(botaoManual())
+
+    expect(screen.getByLabelText(/Conteúdo/)).toBeDisabled()
+    expect(screen.queryByRole('button', { name: /Gerar prova/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Usar outra IA (copiar e colar)' })).not.toBeInTheDocument()
+
+    await userEvent.click(within(painelManual()).getByRole('button', { name: 'Voltar aos parâmetros' }))
+    expect(screen.queryByRole('region', { name: /outra IA/ })).not.toBeInTheDocument()
+    expect(screen.getByLabelText(/Conteúdo/)).toBeEnabled()
+    expect(screen.getByLabelText(/Conteúdo/)).toHaveValue('Organelas celulares')
+    expect(botaoGerar()).toBeEnabled()
+  })
+
+  it('o painel tem links para ChatGPT, Claude e Gemini em nova aba', async () => {
+    semearPerfis({ id: 'p1', nome: 'Manhã' })
+    renderAt('/provas/nova')
+    await preencherConteudo()
+    await userEvent.click(botaoManual())
+    const painel = painelManual()
+    for (const [nome, href] of [
+      ['ChatGPT', 'https://chatgpt.com'],
+      ['Claude', 'https://claude.ai/new'],
+      ['Gemini', 'https://gemini.google.com/app'],
+    ]) {
+      const link = within(painel).getByRole('link', { name: new RegExp(`^${nome}`) })
+      expect(link).toHaveAttribute('href', href)
+      expect(link).toHaveAttribute('target', '_blank')
+      expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+    }
+  })
+
+  it('Quando copiar falha, então seleciona o prompt e pede Ctrl+C', async () => {
+    semearPerfis({ id: 'p1', nome: 'Manhã' })
+    renderAt('/provas/nova')
+    await preencherConteudo()
+    await userEvent.click(botaoManual())
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: vi.fn(async () => Promise.reject(new Error('negado'))) },
+      configurable: true,
+    })
+    const painel = painelManual()
+    await userEvent.click(within(painel).getByRole('button', { name: /Copiar/ }))
+    expect(await within(painel).findByText('Selecione o texto e copie com Ctrl+C.')).toBeInTheDocument()
+    const prompt = within(painel).getByLabelText('Prompt') as HTMLTextAreaElement
+    expect(prompt).toHaveFocus()
+    expect([prompt.selectionStart, prompt.selectionEnd]).toEqual([0, prompt.value.length])
+  })
+
+  it('Dado que não há chave, o aviso também oferece usar outra IA', () => {
+    semearPerfis({ id: 'p1', nome: 'Manhã' })
+    renderAt('/provas/nova')
+    expect(screen.getByRole('alert')).toHaveTextContent(/usar outra IA/i)
+  })
+
+  it('Quando o Gemini falha, o erro tem o botão que abre o painel com os mesmos parâmetros', async () => {
+    ambienteCompleto()
+    mockFetch(async () => new Response('{}', { status: 503 }))
+    renderAt('/provas/nova')
+    await preencherConteudo('Fotossíntese')
+    await userEvent.type(screen.getByLabelText(/Observações/), 'Sem cálculos')
+    await userEvent.click(botaoGerar())
+
+    const erro = await screen.findByRole('alert')
+    expect(erro).toHaveTextContent('sobrecarregado')
+    await userEvent.click(within(erro).getByRole('button', { name: 'Usar outra IA (copiar e colar)' }))
+
+    const prompt = within(painelManual()).getByLabelText('Prompt') as HTMLTextAreaElement
+    expect(prompt.value).toContain('Fotossíntese')
+    expect(prompt.value).toContain('exatamente 10 questões')
+    expect(prompt.value).toContain('Sem cálculos')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('Quando o armazenamento está cheio, o erro aparece no painel e o texto fica', async () => {
+    semearPerfis({ id: 'p1', nome: 'Manhã' })
+    renderAt('/provas/nova')
+    await preencherConteudo()
+    await userEvent.click(botaoManual())
+    await colarResposta(respostaColada(10))
+    const original = Storage.prototype.setItem
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, k: string, v: string) {
+      if (k === 'provario:exams') throw new DOMException('cheio', 'QuotaExceededError')
+      return original.call(this, k, v)
+    })
+    await userEvent.click(within(painelManual()).getByRole('button', { name: 'Montar prova' }))
+    expect(screen.getByText(/armazenamento do navegador está cheio/)).toBeInTheDocument()
+    expect(within(painelManual()).getByLabelText(/Resposta da IA/)).toHaveValue(respostaColada(10))
+  })
+})
+
 describe('Prova — visualização', () => {
   it('Dado um id inexistente, mostra aviso com link para Nova prova', () => {
     renderAt('/provas/inexistente')

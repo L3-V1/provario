@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import type { ExamParams } from './exams'
-import { parseExamResponse, parseQuestionResponse } from './examResponse'
+import {
+  extrairJsonColado,
+  parseExamData,
+  parseExamResponse,
+  parsePastedExam,
+  parsePastedQuestion,
+  parseQuestionData,
+  parseQuestionResponse,
+} from './examResponse'
 
 function params(over: Partial<ExamParams> = {}): ExamParams {
   return {
@@ -210,5 +218,158 @@ describe('parseQuestionResponse', () => {
 
   it('rejeita lista no lugar de objeto', () => {
     expect(parseQuestionResponse(corpoQuestao([q()]), 4)).toMatchObject({ ok: false, kind: 'format' })
+  })
+
+  it('com `outras`, recusa enunciado repetido (ignorando caixa e espaços)', () => {
+    const outras = [{ enunciado: 'Qual é a organela da respiração?', alternativas: ['a', 'b', 'c', 'd'], correta: 0 }]
+    const r = parseQuestionResponse(corpoQuestao(q({ enunciado: '  QUAL é a organela da respiração? ' })), 4, outras)
+    expect(r).toEqual({ ok: false, kind: 'format', motivo: 'A questão nova repete uma que já está na prova.' })
+  })
+})
+
+describe('parseExamData / parseQuestionData (conteúdo, sem o envelope do Gemini)', () => {
+  it('parseExamData valida a contagem e cada questão', () => {
+    expect(parseExamData({ questoes: [q(), q({ correta: 'A' })] }, params())).toMatchObject({ ok: true })
+    expect(parseExamData({ questoes: [q()] }, params())).toEqual({
+      ok: false,
+      kind: 'format',
+      motivo: 'Esperava 2 questões, mas vieram 1.',
+    })
+    expect(parseExamData(null, params())).toMatchObject({ ok: false, motivo: 'Esperava 2 questões, mas vieram 0.' })
+  })
+
+  it('parseQuestionData aceita uma questão nova e recusa uma repetida', () => {
+    const outras = [{ enunciado: 'Outra?', alternativas: ['a', 'b', 'c', 'd'], correta: 0 }]
+    expect(parseQuestionData(q(), 4, outras)).toMatchObject({ ok: true, questao: { correta: 1 } })
+    expect(parseQuestionData(q({ enunciado: 'outra?' }), 4, outras)).toMatchObject({
+      ok: false,
+      motivo: 'A questão nova repete uma que já está na prova.',
+    })
+  })
+})
+
+describe('extrairJsonColado', () => {
+  const json = JSON.stringify({ questoes: [q()] })
+
+  it('JSON puro', () => {
+    expect(extrairJsonColado(json)).toEqual({ ok: true, dados: { questoes: [q()] } })
+  })
+
+  it('bloco ```json', () => {
+    expect(extrairJsonColado(`Aqui está:\n\`\`\`json\n${json}\n\`\`\`\nBoa prova!`)).toEqual({
+      ok: true,
+      dados: { questoes: [q()] },
+    })
+  })
+
+  it('bloco sem linguagem', () => {
+    expect(extrairJsonColado(`\`\`\`\n${json}\n\`\`\``)).toMatchObject({ ok: true })
+  })
+
+  it('usa o primeiro bloco quando há mais de um', () => {
+    const r = extrairJsonColado(`\`\`\`json\n{"a": 1}\n\`\`\`\n\`\`\`json\n{"b": 2}\n\`\`\``)
+    expect(r).toEqual({ ok: true, dados: { a: 1 } })
+  })
+
+  it('texto antes e depois, sem bloco', () => {
+    expect(extrairJsonColado(`Claro! Segue a prova:\n${json}\nEspero ter ajudado.`)).toMatchObject({ ok: true })
+  })
+
+  it('lista solta', () => {
+    expect(extrairJsonColado(`Segue: [${JSON.stringify(q())}]`)).toEqual({ ok: true, dados: [q()] })
+  })
+
+  it('texto vazio', () => {
+    expect(extrairJsonColado('   \n ')).toEqual({ ok: false, motivo: 'Cole a resposta do chat de IA.' })
+  })
+
+  it('lixo sem JSON', () => {
+    const msg = 'Não encontrei um JSON válido na resposta. Copie a resposta inteira do chat, do começo ao fim.'
+    expect(extrairJsonColado('Desculpe, não posso ajudar com isso.')).toEqual({ ok: false, motivo: msg })
+    expect(extrairJsonColado('{"questoes": [ {"enunciado": "cortado')).toEqual({ ok: false, motivo: msg })
+  })
+})
+
+describe('parsePastedExam', () => {
+  const p10 = params({ quantidade: 10 })
+  const lista = (n: number) => Array.from({ length: n }, (_, i) => q({ enunciado: `Pergunta ${i + 1}?` }))
+
+  it('aceita o objeto com `questoes` dentro de um bloco de código', () => {
+    const r = parsePastedExam(`\`\`\`json\n${JSON.stringify({ questoes: lista(10) })}\n\`\`\``, p10)
+    expect(r.ok && r.questoes).toHaveLength(10)
+  })
+
+  it('aceita uma lista solta de questões', () => {
+    const r = parsePastedExam(JSON.stringify(lista(10)), p10)
+    expect(r.ok && r.questoes[9].enunciado).toBe('Pergunta 10?')
+  })
+
+  it('contagem errada → "Esperava 10 questões, mas vieram 8."', () => {
+    expect(parsePastedExam(JSON.stringify({ questoes: lista(8) }), p10)).toEqual({
+      ok: false,
+      kind: 'format',
+      motivo: 'Esperava 10 questões, mas vieram 8.',
+    })
+  })
+
+  it('questão sem gabarito → motivo com o número dela', () => {
+    const itens = lista(10)
+    itens[6] = q({ enunciado: 'Pergunta 7?', correta: undefined })
+    expect(parsePastedExam(JSON.stringify({ questoes: itens }), p10)).toMatchObject({
+      ok: false,
+      motivo: 'A questão 7 está sem gabarito válido.',
+    })
+  })
+
+  it('texto vazio e lixo devolvem o motivo da extração', () => {
+    expect(parsePastedExam('', p10)).toEqual({ ok: false, kind: 'format', motivo: 'Cole a resposta do chat de IA.' })
+    expect(parsePastedExam('oi', p10)).toMatchObject({ ok: false, motivo: /Não encontrei um JSON válido/ })
+  })
+
+  it('remove prefixos "a) " e "1. " também no colado', () => {
+    const r = parsePastedExam(
+      JSON.stringify([q({ enunciado: '1. Pergunta?', alternativas: ['a) Um', 'b) Dois', 'c) Três', 'd) Quatro'] })]),
+      params({ quantidade: 1 }),
+    )
+    expect(r.ok && r.questoes[0]).toEqual({ enunciado: 'Pergunta?', alternativas: ['Um', 'Dois', 'Três', 'Quatro'], correta: 1 })
+  })
+})
+
+describe('parsePastedQuestion', () => {
+  const outras = [{ enunciado: 'Primeira pergunta?', alternativas: ['a', 'b', 'c', 'd'], correta: 0 }]
+
+  it('aceita a questão como objeto, como `{ questoes: [uma] }` e como `[uma]`', () => {
+    for (const texto of [JSON.stringify(q()), JSON.stringify({ questoes: [q()] }), `Segue:\n[${JSON.stringify(q())}]`]) {
+      expect(parsePastedQuestion(texto, 4, outras)).toMatchObject({ ok: true, questao: { correta: 1 } })
+    }
+  })
+
+  it('recusa enunciado repetido', () => {
+    expect(parsePastedQuestion(JSON.stringify(q({ enunciado: 'primeira pergunta?' })), 4, outras)).toEqual({
+      ok: false,
+      kind: 'format',
+      motivo: 'A questão nova repete uma que já está na prova.',
+    })
+  })
+
+  it('lista com mais de uma questão → motivo claro', () => {
+    expect(parsePastedQuestion(JSON.stringify([q(), q()]), 4, outras)).toMatchObject({
+      ok: false,
+      motivo: 'Esperava 1 questão, mas vieram 2.',
+    })
+  })
+
+  it('usa o nº de alternativas informado e remove prefixos', () => {
+    const r = parsePastedQuestion(
+      JSON.stringify(q({ alternativas: ['A) um', 'B) dois', 'C) três', 'D) quatro', 'E) cinco'], correta: 'E' })),
+      5,
+      outras,
+    )
+    expect(r.ok && r.questao).toMatchObject({ alternativas: ['um', 'dois', 'três', 'quatro', 'cinco'], correta: 4 })
+    expect(parsePastedQuestion(JSON.stringify(q()), 5, outras)).toMatchObject({ ok: false, motivo: /não tem 5 alternativas/ })
+  })
+
+  it('texto vazio', () => {
+    expect(parsePastedQuestion(' ', 4, outras)).toMatchObject({ ok: false, motivo: 'Cole a resposta do chat de IA.' })
   })
 })

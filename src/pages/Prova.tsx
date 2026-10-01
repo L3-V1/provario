@@ -6,6 +6,7 @@ import ConfirmDialog from '../components/ConfirmDialog'
 import EditorProva from '../components/EditorProva'
 import FolhaProva from '../components/FolhaProva'
 import Icone from '../components/Icone'
+import ModoManual from '../components/ModoManual'
 import { idAlternativa, idCorreta, idEnunciado } from '../components/idsEditor'
 import {
   DEFAULT_EXAMS,
@@ -23,6 +24,8 @@ import {
   type Question,
   type QuestionErrors,
 } from '../lib/exams'
+import { buildManualQuestionPrompt } from '../lib/examPrompt'
+import { parsePastedQuestion } from '../lib/examResponse'
 import { regenerateQuestion } from '../lib/gemini'
 import { DEFAULT_SETTINGS, SETTINGS_KEY, type Settings } from '../lib/settings'
 import { readItem, StorageQuotaError, writeItem } from '../lib/storage'
@@ -63,7 +66,9 @@ export default function Prova() {
   const [erroSalvar, setErroSalvar] = useState<string | null>(null)
   const [salvo, setSalvo] = useState(false)
   const [regerando, setRegerando] = useState<number | null>(null)
-  const [erroRegerar, setErroRegerar] = useState<string | null>(null)
+  const [erroRegerar, setErroRegerar] = useState<{ indice: number; mensagem: string } | null>(null)
+  // Questão com o painel do modo manual (copiar e colar) aberto.
+  const [manualIndice, setManualIndice] = useState<number | null>(null)
   const [regerada, setRegerada] = useState<{ indice: number; anterior: Question } | null>(null)
   const [excluindo, setExcluindo] = useState<number | null>(null)
   const [descartando, setDescartando] = useState(false)
@@ -117,6 +122,7 @@ export default function Prova() {
     setSalvo(false)
     setErroRegerar(null)
     setRegerada(null)
+    setManualIndice(null)
   }
 
   function sairDaEdicao() {
@@ -126,6 +132,7 @@ export default function Prova() {
     setErroSalvar(null)
     setErroRegerar(null)
     setRegerada(null)
+    setManualIndice(null)
     setDescartando(false)
   }
 
@@ -175,6 +182,7 @@ export default function Prova() {
     setErros({})
     setRegerada(null)
     setExcluindo(null)
+    setManualIndice(null)
   }
 
   async function regerar(i: number) {
@@ -182,20 +190,43 @@ export default function Prova() {
     const anterior = rascunho[i]
     setErroRegerar(null)
     setRegerada(null)
+    setManualIndice(null)
     setRegerando(i)
     const r = await regenerateQuestion(chave, prova!.params, rascunho.filter((_, j) => j !== i), anterior)
     if (!montado.current) return
     setRegerando(null)
     if (!r.ok) {
-      setErroRegerar(r.message)
+      setErroRegerar({ indice: i, mensagem: r.message })
       return
     }
-    setRascunho((atual) => (atual ? replaceQuestion(atual, i, r.questao) : atual))
+    trocarQuestao(i, anterior, r.questao)
+  }
+
+  /** Põe a questão nova no rascunho, limpa os erros dela e guarda a anterior para o "Desfazer". */
+  function trocarQuestao(i: number, anterior: Question, nova: Question) {
+    setRascunho((atual) => (atual ? replaceQuestion(atual, i, nova) : atual))
     setErros((e) => {
       const { [i]: _, ...resto } = e
       return resto
     })
     setRegerada({ indice: i, anterior })
+  }
+
+  function abrirManual(i: number) {
+    setErroRegerar(null)
+    setRegerada(null)
+    setManualIndice(i)
+  }
+
+  function aplicarManual(i: number, texto: string): string | null {
+    if (!rascunho) return null
+    const atual = rascunho[i]
+    const r = parsePastedQuestion(texto, atual.alternativas.length, rascunho.filter((_, j) => j !== i))
+    if (!r.ok) return r.motivo
+    trocarQuestao(i, atual, r.questao)
+    setManualIndice(null)
+    document.getElementById(idEnunciado(i))?.focus()
+    return null
   }
 
   function desfazer() {
@@ -287,14 +318,25 @@ export default function Prova() {
 
         {editando && !chave && (
           <Aviso tipo="atencao">
-            Para regerar questões, configure a chave do Gemini.{' '}
+            Para regerar com o Gemini, configure a chave.{' '}
             <Link to="/configuracoes" className="link">
               Ir para Configurações
-            </Link>
+            </Link>{' '}
+            Você também pode regerar com outra IA (copiar e colar).
           </Aviso>
         )}
         {erroSalvar && <Aviso tipo="erro">{erroSalvar}</Aviso>}
-        {erroRegerar && <Aviso tipo="erro">{erroRegerar}</Aviso>}
+        {erroRegerar && (
+          <Aviso tipo="erro">
+            {erroRegerar.mensagem}
+            <span className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+              Você pode tentar de novo ou regerar a questão {erroRegerar.indice + 1} com outra IA.
+              <button type="button" className="link" onClick={() => abrirManual(erroRegerar.indice)}>
+                Regerar com outra IA
+              </button>
+            </span>
+          </Aviso>
+        )}
         {regerando !== null && (
           <p role="status" className="font-semibold">
             Regerando…
@@ -340,6 +382,31 @@ export default function Prova() {
             onChange={alterar}
             onExcluir={setExcluindo}
             onRegerar={regerar}
+            onRegerarManual={abrirManual}
+            painel={
+              manualIndice !== null && rascunho[manualIndice]
+                ? {
+                    indice: manualIndice,
+                    conteudo: (
+                      <ModoManual
+                        key={manualIndice}
+                        id={`manual-questao-${manualIndice}`}
+                        titulo={`Regerar a questão ${manualIndice + 1} com outra IA`}
+                        nivel={3}
+                        prompt={buildManualQuestionPrompt(
+                          params,
+                          rascunho.filter((_, j) => j !== manualIndice),
+                          rascunho[manualIndice],
+                        )}
+                        rotuloAplicar="Trocar questão"
+                        onAplicar={(texto) => aplicarManual(manualIndice, texto)}
+                        rotuloCancelar="Cancelar"
+                        onCancelar={() => setManualIndice(null)}
+                      />
+                    ),
+                  }
+                : undefined
+            }
           />
         </div>
       ) : (

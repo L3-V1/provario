@@ -3,29 +3,37 @@ import { Link, useNavigate } from 'react-router'
 import Aviso from '../components/Aviso'
 import CampoTexto from '../components/CampoTexto'
 import Icone from '../components/Icone'
+import ModoManual from '../components/ModoManual'
 import {
   DEFAULT_EXAMS,
   DIFICULDADES,
   EXAMS_KEY,
   EXAM_DEFAULTS_KEY,
+  MODELO_MANUAL,
   SERIES,
   addExam,
+  createExam,
   defaultTitle,
   initialParams,
   normalizeParams,
   rememberedParams,
   validateParams,
-  type Exam,
   type ExamParamErrors,
   type ExamParams,
   type ExamsData,
+  type Question,
   type RememberedParams,
 } from '../lib/exams'
+import { buildManualExamPrompt } from '../lib/examPrompt'
+import { parsePastedExam } from '../lib/examResponse'
 import { generateExam } from '../lib/gemini'
 import { DEFAULT_PROFILES, PROFILES_KEY, listProfiles, sortProfiles, type ProfilesData } from '../lib/profiles'
 import { DEFAULT_SETTINGS, SETTINGS_KEY, type Settings } from '../lib/settings'
 import { readItem, StorageQuotaError, writeItem } from '../lib/storage'
 import { useStoredState } from '../lib/useStoredState'
+
+const MSG_ARMAZENAMENTO_CHEIO =
+  'Não foi possível salvar a prova: o armazenamento do navegador está cheio. Libere espaço excluindo perfis ou provas antigas e gere de novo.'
 
 const ORDEM_CAMPOS: (keyof ExamParamErrors)[] = ['perfilId', 'disciplina', 'conteudo', 'quantidade']
 const ID_CAMPO: Record<keyof ExamParamErrors, string> = {
@@ -47,8 +55,11 @@ export default function NovaProva() {
   )
   const [quantidadeTexto, setQuantidadeTexto] = useState(() => String(draft.quantidade))
   const [erros, setErros] = useState<ExamParamErrors>({})
-  const [erroGerar, setErroGerar] = useState<string | null>(null)
+  // `oferecerManual`: a falha foi do Gemini, então o aviso oferece o modo manual.
+  const [erroGerar, setErroGerar] = useState<{ mensagem: string; oferecerManual: boolean } | null>(null)
   const [gerando, setGerando] = useState(false)
+  // Parâmetros travados enquanto o painel do modo manual está aberto.
+  const [manual, setManual] = useState<ExamParams | null>(null)
 
   // A prova é gravada mesmo que a professora saia da tela; só a navegação depende de continuar aqui.
   const montado = useRef(true)
@@ -67,11 +78,8 @@ export default function NovaProva() {
     if (campo in erros) setErros((e) => ({ ...e, [campo]: undefined }))
   }
 
-  async function gerar(e: FormEvent) {
-    e.preventDefault()
-    if (gerando) return
-    setErroGerar(null)
-
+  /** Valida o formulário; com erro, foca o primeiro campo e devolve `null`. */
+  function validarFormulario(): ExamParams | null {
     const quantidade = quantidadeTexto.trim() === '' ? Number.NaN : Number(quantidadeTexto)
     const params = normalizeParams({ ...draft, perfilId, quantidade })
     const encontrados = validateParams(params, perfis)
@@ -79,51 +87,20 @@ export default function NovaProva() {
     const primeiro = ORDEM_CAMPOS.find((c) => encontrados[c])
     if (primeiro) {
       document.getElementById(ID_CAMPO[primeiro])?.focus()
-      return
+      return null
     }
+    return params
+  }
 
-    setGerando(true)
-    const r = await generateExam(chave, params)
-    if (!r.ok) {
-      if (montado.current) {
-        setErroGerar(r.message)
-        setGerando(false)
-      }
-      return
-    }
-
+  /** Grava a prova e abre; devolve a mensagem de erro se o armazenamento estiver cheio. */
+  function salvarProva(params: ExamParams, questoes: Question[], modelo: string): string | null {
     const perfil = perfis.find((p) => p.id === params.perfilId)!
-    const agora = new Date().toISOString()
-    const exam: Exam = {
-      id: crypto.randomUUID(),
-      titulo: params.titulo || defaultTitle(params),
-      params,
-      perfil: {
-        id: perfil.id,
-        nome: perfil.nome,
-        escola: perfil.escola,
-        secretaria: perfil.secretaria,
-        logo: perfil.logo,
-        professora: perfil.professora,
-        anoLetivo: perfil.anoLetivo,
-      },
-      questoes: r.questoes,
-      modelo: r.modelo,
-      criadoEm: agora,
-      atualizadoEm: agora,
-    }
-
+    const exam = createExam(params, perfil, questoes, modelo, new Date().toISOString())
     try {
       writeItem<ExamsData>(EXAMS_KEY, addExam(readItem(EXAMS_KEY, DEFAULT_EXAMS), exam))
     } catch (err) {
       if (!(err instanceof StorageQuotaError)) throw err
-      if (montado.current) {
-        setErroGerar(
-          'Não foi possível salvar a prova: o armazenamento do navegador está cheio. Libere espaço excluindo perfis ou provas antigas e gere de novo.',
-        )
-        setGerando(false)
-      }
-      return
+      return MSG_ARMAZENAMENTO_CHEIO
     }
     try {
       writeItem(EXAM_DEFAULTS_KEY, rememberedParams(params))
@@ -131,6 +108,38 @@ export default function NovaProva() {
       // lembrar os parâmetros é só conveniência; a prova já está salva
     }
     if (montado.current) navigate(`/provas/${exam.id}`, { state: { aviso: 'Prova gerada e salva.' } })
+    return null
+  }
+
+  async function gerar(e: FormEvent) {
+    e.preventDefault()
+    if (gerando || manual) return
+    setErroGerar(null)
+    const params = validarFormulario()
+    if (!params) return
+
+    setGerando(true)
+    const r = await generateExam(chave, params)
+    const erro = r.ok ? salvarProva(params, r.questoes, r.modelo) : null
+    if (!montado.current) return
+    if (!r.ok) setErroGerar({ mensagem: r.message, oferecerManual: true })
+    else if (erro) setErroGerar({ mensagem: erro, oferecerManual: false })
+    if (!r.ok || erro) setGerando(false)
+  }
+
+  function abrirManual() {
+    if (gerando) return
+    const params = validarFormulario()
+    if (!params) return
+    setErroGerar(null)
+    setManual(params)
+  }
+
+  function aplicarManual(texto: string): string | null {
+    if (!manual) return null
+    const r = parsePastedExam(texto, manual)
+    if (!r.ok) return r.motivo
+    return salvarProva(manual, r.questoes, MODELO_MANUAL)
   }
 
   const semPerfis = perfis.length === 0
@@ -162,11 +171,12 @@ export default function NovaProva() {
           <Link to="/configuracoes" className="link">
             Ir para Configurações
           </Link>
+          . Você também pode usar outra IA (copiar e colar), que funciona sem chave.
         </Aviso>
       )}
 
       <form noValidate onSubmit={gerar} className="space-y-8">
-        <fieldset disabled={gerando} className="min-w-0">
+        <fieldset disabled={gerando || manual !== null} className="min-w-0">
           <section className="ficha">
             <div className="ficha-cabecalho">
               <h2 className="text-xl font-extrabold">Parâmetros da prova</h2>
@@ -319,19 +329,47 @@ export default function NovaProva() {
           </section>
         </fieldset>
 
-        {erroGerar && <Aviso tipo="erro">{erroGerar}</Aviso>}
+        {erroGerar && (
+          <Aviso tipo="erro">
+            {erroGerar.mensagem}
+            {erroGerar.oferecerManual && (
+              <span className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+                Você pode tentar de novo ou gerar com outra IA.
+                <button type="button" className="link" onClick={abrirManual}>
+                  Usar outra IA (copiar e colar)
+                </button>
+              </span>
+            )}
+          </Aviso>
+        )}
         {gerando && (
           <p role="status" className="font-semibold">
             Isso pode levar até um minuto.
           </p>
         )}
 
-        <div className="grid gap-3 sm:flex sm:flex-wrap">
-          <button type="submit" disabled={bloqueado} className="btn btn-primario">
-            <Icone nome="faisca" />
-            {gerando ? 'Gerando…' : 'Gerar prova'}
-          </button>
-        </div>
+        {manual ? (
+          <ModoManual
+            id="manual-prova"
+            titulo="Gerar com outra IA (copiar e colar)"
+            prompt={buildManualExamPrompt(manual)}
+            rotuloAplicar="Montar prova"
+            onAplicar={aplicarManual}
+            rotuloCancelar="Voltar aos parâmetros"
+            onCancelar={() => setManual(null)}
+          />
+        ) : (
+          <div className="grid gap-3 sm:flex sm:flex-wrap">
+            <button type="submit" disabled={bloqueado} className="btn btn-primario">
+              <Icone nome="faisca" />
+              {gerando ? 'Gerando…' : 'Gerar prova'}
+            </button>
+            <button type="button" disabled={semPerfis || gerando} className="btn btn-secundario" onClick={abrirManual}>
+              <Icone nome="copiar" />
+              Usar outra IA (copiar e colar)
+            </button>
+          </div>
+        )}
       </form>
     </div>
   )
