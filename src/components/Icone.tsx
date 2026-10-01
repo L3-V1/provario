@@ -74,6 +74,24 @@ const paths = {
       <path d="M7 14h10v7H7Z" />
     </>
   ),
+  copiar: (
+    <>
+      <path d="M8 8h13v13H8Z" />
+      <path d="M16 8V3H3v13h5" />
+    </>
+  ),
+  baixar: (
+    <>
+      <path d="M12 3v12M6.5 10 12 15.5 17.5 10" />
+      <path d="M4 21h16" />
+    </>
+  ),
+  enviar: (
+    <>
+      <path d="M12 16V4M6.5 9.5 12 4l5.5 5.5" />
+      <path d="M4 21h16" />
+    </>
+  ),
 } as const
 
 export type NomeIcone = keyof typeof paths

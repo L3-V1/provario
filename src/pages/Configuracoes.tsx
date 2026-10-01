@@ -1,12 +1,47 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Aviso from '../components/Aviso'
 import ConfirmDialog from '../components/ConfirmDialog'
 import Icone from '../components/Icone'
+import {
+  applyBackup,
+  backupFileName,
+  createBackup,
+  downloadJson,
+  parseBackup,
+  readCurrentData,
+  restoreData,
+  type Backup,
+  type ModoImportacao,
+  type ResumoMescla,
+} from '../lib/backup'
+import { DEFAULT_EXAMS, EXAMS_KEY, listExams } from '../lib/exams'
+import { DEFAULT_PROFILES, PROFILES_KEY, listProfiles } from '../lib/profiles'
+import { readItem, StorageQuotaError } from '../lib/storage'
 import { testConnection } from '../lib/gemini'
 import { DEFAULT_SETTINGS, SETTINGS_KEY, type Settings } from '../lib/settings'
 import { useStoredState } from '../lib/useStoredState'
 
 type Retorno = { tipo: 'sucesso' | 'erro'; texto: string }
+
+const MSG_ARMAZENAMENTO_CHEIO =
+  'Não foi possível importar: o armazenamento do navegador está cheio. Seus dados continuam como estavam. Libere espaço excluindo perfis ou provas antigas e tente de novo.'
+
+const quantos = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`
+const perfisEProvas = (perfis: number, provas: number) =>
+  `${quantos(perfis, 'perfil', 'perfis')} e ${quantos(provas, 'prova', 'provas')}`
+
+function textoImportado(modo: ModoImportacao, perfis: ResumoMescla, provas: ResumoMescla): string {
+  if (modo === 'substituir') return `Backup importado: ${perfisEProvas(perfis.novos, provas.novos)}.`
+  return (
+    `Backup importado. Perfis: ${quantos(perfis.novos, 'novo', 'novos')}, ${quantos(perfis.atualizados, 'atualizado', 'atualizados')}. ` +
+    `Provas: ${quantos(provas.novos, 'nova', 'novas')}, ${quantos(provas.atualizados, 'atualizada', 'atualizadas')}.`
+  )
+}
+
+function dataDoBackup(backup: Backup): string {
+  const d = new Date(backup.exportadoEm)
+  return Number.isNaN(d.getTime()) ? 'Backup' : `Backup de ${d.toLocaleDateString('pt-BR')}`
+}
 
 const passos = [
   <>
@@ -29,6 +64,10 @@ export default function Configuracoes() {
   const [testing, setTesting] = useState(false)
   const [confirmando, setConfirmando] = useState(false)
   const [retorno, setRetorno] = useState<Retorno | null>(null)
+  const [retornoBackup, setRetornoBackup] = useState<Retorno | null>(null)
+  const [pendente, setPendente] = useState<Backup | null>(null)
+  const [substituindo, setSubstituindo] = useState(false)
+  const entradaArquivo = useRef<HTMLInputElement>(null)
 
   const hasKey = settings.geminiApiKey !== ''
 
@@ -56,6 +95,59 @@ export default function Configuracoes() {
     }
     setTesting(false)
   }
+
+  function exportar() {
+    const agora = new Date()
+    const backup = createBackup(
+      readItem<unknown>(PROFILES_KEY, DEFAULT_PROFILES),
+      readItem<unknown>(EXAMS_KEY, DEFAULT_EXAMS),
+      agora,
+    )
+    downloadJson(backupFileName(agora), backup)
+    setPendente(null)
+    setRetornoBackup({
+      tipo: 'sucesso',
+      texto: `Backup exportado: ${perfisEProvas(backup.perfis.length, backup.provas.length)}`,
+    })
+  }
+
+  async function escolherArquivo(e: React.ChangeEvent<HTMLInputElement>) {
+    const arquivo = e.target.files?.[0]
+    e.target.value = '' // permite escolher o mesmo arquivo de novo
+    if (!arquivo) return
+    setPendente(null)
+    setRetornoBackup(null)
+    let texto: string
+    try {
+      texto = await arquivo.text()
+    } catch {
+      setRetornoBackup({ tipo: 'erro', texto: 'Não foi possível ler o arquivo.' })
+      return
+    }
+    const r = parseBackup(texto)
+    if (!r.ok) {
+      setRetornoBackup({ tipo: 'erro', texto: r.message })
+      return
+    }
+    setPendente(r.backup)
+  }
+
+  function importar(modo: ModoImportacao) {
+    if (!pendente) return
+    setSubstituindo(false)
+    try {
+      const r = applyBackup(modo, readCurrentData(), pendente)
+      restoreData(r.dados)
+      setRetornoBackup({ tipo: 'sucesso', texto: textoImportado(modo, r.resumo.perfis, r.resumo.provas) })
+    } catch (err) {
+      if (!(err instanceof StorageQuotaError)) throw err
+      setRetornoBackup({ tipo: 'erro', texto: MSG_ARMAZENAMENTO_CHEIO })
+    }
+    setPendente(null)
+  }
+
+  const atuais = readCurrentData()
+  const qtdAtuais = { perfis: listProfiles(atuais.perfis).length, provas: listExams(atuais.provas).length }
 
   return (
     <div className="space-y-8">
@@ -156,6 +248,71 @@ export default function Configuracoes() {
         </div>
       </section>
 
+      <section className="ficha">
+        <div className="ficha-cabecalho">
+          <h2 className="text-xl font-extrabold">Backup dos dados</h2>
+        </div>
+        <div className="space-y-4 px-3 py-5 sm:px-5">
+          <p className="max-w-[60ch]">
+            O arquivo de backup guarda os perfis e as provas salvos neste navegador. A chave do Gemini não entra no
+            arquivo, para que ele possa ser compartilhado com segurança. Faça um backup antes de limpar os dados do
+            navegador ou de trocar de computador.
+          </p>
+          <div className="grid gap-3 sm:flex sm:flex-wrap">
+            <button type="button" onClick={exportar} className="btn btn-primario">
+              <Icone nome="baixar" />
+              Exportar backup
+            </button>
+            <button type="button" onClick={() => entradaArquivo.current?.click()} className="btn btn-secundario">
+              <Icone nome="enviar" />
+              Importar backup
+            </button>
+            <input
+              ref={entradaArquivo}
+              type="file"
+              accept=".json,application/json"
+              aria-label="Arquivo de backup"
+              onChange={escolherArquivo}
+              hidden
+            />
+          </div>
+
+          {retornoBackup && <Aviso tipo={retornoBackup.tipo}>{retornoBackup.texto}</Aviso>}
+
+          {pendente && (
+            <div className="space-y-4 border-2 border-tinta p-4">
+              <p className="font-bold">
+                {dataDoBackup(pendente)} com {perfisEProvas(pendente.perfis.length, pendente.provas.length)}
+              </p>
+              <p>Como você quer trazer esses dados?</p>
+              <div className="grid gap-3 sm:flex sm:flex-wrap">
+                <button type="button" onClick={() => importar('mesclar')} className="btn btn-primario">
+                  Mesclar com os dados atuais
+                </button>
+                <button type="button" onClick={() => setSubstituindo(true)} className="btn btn-perigo-contorno">
+                  Substituir tudo
+                </button>
+                <button type="button" onClick={() => setPendente(null)} className="btn btn-secundario">
+                  Cancelar
+                </button>
+              </div>
+              <p className="text-sm text-tinta-suave">
+                Mesclar junta os itens pelo identificador; quando o mesmo item existe nos dois lados, fica a versão
+                editada por último.
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <ConfirmDialog
+        aberto={substituindo}
+        titulo="Substituir todos os dados?"
+        mensagem={`Os ${perfisEProvas(qtdAtuais.perfis, qtdAtuais.provas)} atuais serão apagados e trocados pelo conteúdo do backup. Essa ação não pode ser desfeita.`}
+        rotuloConfirmar="Substituir"
+        onConfirmar={() => importar('substituir')}
+        onCancelar={() => setSubstituindo(false)}
+      />
       <ConfirmDialog
         aberto={confirmando}
         titulo="Remover a chave do Gemini?"

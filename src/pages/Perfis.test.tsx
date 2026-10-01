@@ -287,9 +287,9 @@ describe('Navegação', () => {
     expect(screen.getByRole('link', { name: 'Início' })).not.toHaveAttribute('aria-current')
   })
 
-  it('a aba "Perfis" fica entre Nova prova e Configurações', () => {
+  it('a aba "Perfis" fica entre Provas e Configurações', () => {
     renderAt('/')
     const abas = within(screen.getByRole('navigation', { name: 'Principal' })).getAllByRole('link')
-    expect(abas.map((a) => a.textContent)).toEqual(['Início', 'Nova prova', 'Perfis', 'Configurações'])
+    expect(abas.map((a) => a.textContent)).toEqual(['Início', 'Provas', 'Perfis', 'Configurações'])
   })
 })

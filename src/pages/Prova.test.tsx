@@ -431,6 +431,86 @@ describe('Prova — modo edição', () => {
   })
 })
 
+describe('Prova — título editável', () => {
+  const campoTitulo = () => screen.getByLabelText(/^Título da prova/)
+
+  it('Quando entra em edição, mostra o campo de título preenchido', async () => {
+    semear()
+    renderProva()
+    expect(screen.queryByLabelText(/^Título da prova/)).toBeNull()
+    await entrarEmEdicao()
+    expect(campoTitulo()).toHaveValue('Avaliação de Ciências — 7º ano')
+  })
+
+  it('Quando edita o título e salva, persiste o título e a folha mostra o novo', async () => {
+    semear()
+    renderProva()
+    await entrarEmEdicao()
+    await reescrever(campoTitulo(), '  Prova do 2º bimestre  ')
+    await userEvent.click(screen.getByRole('button', { name: /Salvar alterações/ }))
+
+    expect(lerSalvo().titulo).toBe('Prova do 2º bimestre')
+    expect(lerSalvo().atualizadoEm).not.toBe(prova().atualizadoEm)
+    expect(screen.getByRole('heading', { level: 1, name: 'Prova do 2º bimestre' })).toBeInTheDocument()
+    expect(within(screen.getByRole('article', { name: 'Prova' })).getByRole('heading', { name: /Prova do 2º bimestre/ })).toBeInTheDocument()
+    expect(document.title).toBe('Prova do 2º bimestre')
+  })
+
+  it('Dado título vazio, não salva, mostra o erro e leva o foco ao campo', async () => {
+    semear()
+    renderProva()
+    await entrarEmEdicao()
+    await reescrever(campoTitulo(), '   ')
+    await userEvent.click(screen.getByRole('button', { name: /Salvar alterações/ }))
+
+    expect(screen.getByText('Informe o título da prova.')).toBeInTheDocument()
+    expect(campoTitulo()).toHaveFocus()
+    expect(lerSalvo()).toEqual(prova())
+  })
+
+  it('o erro do título tem prioridade de foco sobre o das questões', async () => {
+    semear()
+    renderProva()
+    await entrarEmEdicao()
+    await userEvent.clear(enunciado(1))
+    await userEvent.clear(campoTitulo())
+    await userEvent.click(screen.getByRole('button', { name: /Salvar alterações/ }))
+    expect(campoTitulo()).toHaveFocus()
+  })
+
+  it('Dado que mudou só o título, quando tenta sair, pede confirmação', async () => {
+    semear()
+    const router = renderProva()
+    await entrarEmEdicao()
+    await reescrever(campoTitulo(), 'Outro título')
+    await act(() => router.navigate('/perfis'))
+    expect(await screen.findByRole('alertdialog')).toHaveTextContent('Sair sem salvar?')
+    expect(router.state.location.pathname).toBe('/provas/e1')
+  })
+
+  it('Dado que só mudou o título, "Descartar" pede confirmação e restaura o título', async () => {
+    semear()
+    renderProva()
+    await entrarEmEdicao()
+    await reescrever(campoTitulo(), 'Outro título')
+    await userEvent.click(screen.getByRole('button', { name: 'Descartar' }))
+    await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Descartar alterações' }))
+    expect(lerSalvo()).toEqual(prova())
+    expect(screen.getByRole('heading', { level: 1, name: 'Avaliação de Ciências — 7º ano' })).toBeInTheDocument()
+  })
+
+  it('ao editar de novo depois de descartar, o campo volta ao título salvo', async () => {
+    semear()
+    renderProva()
+    await entrarEmEdicao()
+    await reescrever(campoTitulo(), 'Outro título')
+    await userEvent.click(screen.getByRole('button', { name: 'Descartar' }))
+    await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Descartar alterações' }))
+    await entrarEmEdicao()
+    expect(campoTitulo()).toHaveValue('Avaliação de Ciências — 7º ano')
+  })
+})
+
 describe('Prova — regerar questão', () => {
   it('Quando regera, então manda as demais questões, troca só aquela e o gabarito, e "Desfazer" restaura', async () => {
     semear()

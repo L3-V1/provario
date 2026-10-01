@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useBlocker, useLocation, useParams } from 'react-router'
 import Aviso from '../components/Aviso'
+import CampoTexto from '../components/CampoTexto'
 import ConfirmDialog from '../components/ConfirmDialog'
 import EditorProva from '../components/EditorProva'
 import FolhaProva from '../components/FolhaProva'
@@ -17,7 +18,7 @@ import {
   rotuloDificuldade,
   updateExam,
   validateQuestions,
-  withQuestions,
+  withEdits,
   type ExamsData,
   type Question,
   type QuestionErrors,
@@ -42,6 +43,8 @@ function primeiroCampoComErro(erros: QuestionErrors): string | null {
   return idCorreta(i)
 }
 
+const ID_TITULO = 'titulo-prova'
+
 export default function Prova() {
   const { id } = useParams()
   const [data] = useStoredState<ExamsData>(EXAMS_KEY, DEFAULT_EXAMS)
@@ -54,6 +57,8 @@ export default function Prova() {
 
   // Rascunho: editar, excluir e regerar mexem só aqui; "Salvar alterações" grava tudo de uma vez.
   const [rascunho, setRascunho] = useState<Question[] | null>(null)
+  const [tituloRascunho, setTituloRascunho] = useState('')
+  const [erroTitulo, setErroTitulo] = useState<string | null>(null)
   const [erros, setErros] = useState<QuestionErrors>({})
   const [erroSalvar, setErroSalvar] = useState<string | null>(null)
   const [salvo, setSalvo] = useState(false)
@@ -72,7 +77,8 @@ export default function Prova() {
   }, [])
 
   const editando = rascunho !== null
-  const pendente = editando && !!prova && !questionsEqual(rascunho, prova.questoes)
+  const pendente =
+    editando && !!prova && (tituloRascunho !== prova.titulo || !questionsEqual(rascunho, prova.questoes))
   const bloqueio = useBlocker(pendente)
 
   // O nome do arquivo ao "Salvar como PDF" vem do título do documento.
@@ -88,9 +94,14 @@ export default function Prova() {
     return (
       <div className="space-y-4">
         <Aviso tipo="erro">Prova não encontrada. Ela pode ter sido apagada deste navegador.</Aviso>
-        <Link to="/provas/nova" className="link">
-          Gerar uma nova prova
-        </Link>
+        <div className="flex flex-wrap gap-x-6 gap-y-2">
+          <Link to="/provas/nova" className="link">
+            Gerar uma nova prova
+          </Link>
+          <Link to="/provas" className="link">
+            Ver provas salvas
+          </Link>
+        </div>
       </div>
     )
   }
@@ -99,6 +110,8 @@ export default function Prova() {
 
   function editar() {
     setRascunho(prova!.questoes)
+    setTituloRascunho(prova!.titulo)
+    setErroTitulo(null)
     setErros({})
     setErroSalvar(null)
     setSalvo(false)
@@ -108,6 +121,7 @@ export default function Prova() {
 
   function sairDaEdicao() {
     setRascunho(null)
+    setErroTitulo(null)
     setErros({})
     setErroSalvar(null)
     setErroRegerar(null)
@@ -117,10 +131,16 @@ export default function Prova() {
 
   function salvar() {
     if (!rascunho || regerando !== null) return
+    const tituloNormalizado = tituloRascunho.trim()
     const questoes = normalizeQuestions(rascunho)
     const encontrados = validateQuestions(questoes)
     setErros(encontrados)
+    setErroTitulo(tituloNormalizado === '' ? 'Informe o título da prova.' : null)
     setErroSalvar(null)
+    if (tituloNormalizado === '') {
+      document.getElementById(ID_TITULO)?.focus()
+      return
+    }
     if (Object.keys(encontrados).length > 0) {
       const campo = primeiroCampoComErro(encontrados)
       if (campo) document.getElementById(campo)?.focus()
@@ -130,7 +150,7 @@ export default function Prova() {
       const atual = readItem(EXAMS_KEY, DEFAULT_EXAMS)
       writeItem<ExamsData>(
         EXAMS_KEY,
-        updateExam(atual, withQuestions(prova!, questoes)),
+        updateExam(atual, withEdits(prova!, { titulo: tituloNormalizado, questoes })),
       )
     } catch (err) {
       if (!(err instanceof StorageQuotaError)) throw err
@@ -293,7 +313,25 @@ export default function Prova() {
       </div>
 
       {rascunho ? (
-        <div className="print:hidden">
+        <div className="space-y-6 print:hidden">
+          <section className="ficha">
+            <div className="ficha-cabecalho">
+              <h2 className="text-xl font-extrabold">Título</h2>
+            </div>
+            <div className="px-3 py-5 sm:px-5">
+              <CampoTexto
+                id={ID_TITULO}
+                rotulo="Título da prova"
+                obrigatorio
+                valor={tituloRascunho}
+                erro={erroTitulo ?? undefined}
+                onChange={(v) => {
+                  setTituloRascunho(v)
+                  setErroTitulo(null)
+                }}
+              />
+            </div>
+          </section>
           <EditorProva
             questoes={rascunho}
             erros={erros}

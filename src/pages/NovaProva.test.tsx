@@ -97,10 +97,10 @@ describe('Nova prova — pré-condições', () => {
     expect(botaoGerar()).toBeDisabled()
   })
 
-  it('a aba "Nova prova" fica ativa no formulário', () => {
+  it('a aba "Provas" fica ativa no formulário', () => {
     ambienteCompleto()
     renderAt('/provas/nova')
-    expect(screen.getByRole('link', { name: 'Nova prova' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: 'Provas' })).toHaveAttribute('aria-current', 'page')
   })
 })
 
@@ -180,7 +180,7 @@ describe('Nova prova — geração', () => {
     renderAt(caminho)
     expect(screen.getByText('1. Pergunta 1 sobre células?')).toBeInTheDocument()
     expect(screen.getByRole('region', { name: /Gabarito/ })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Nova prova' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: 'Provas' })).toHaveAttribute('aria-current', 'page')
   })
 
   it('Quando o perfil é excluído depois, a prova mantém o snapshot', async () => {
@@ -316,12 +316,13 @@ describe('Prova — visualização', () => {
     renderAt('/provas/inexistente')
     expect(screen.getByRole('alert')).toHaveTextContent('Prova não encontrada')
     expect(screen.getByRole('link', { name: 'Gerar uma nova prova' })).toHaveAttribute('href', '/provas/nova')
+    expect(screen.getByRole('link', { name: 'Ver provas salvas' })).toHaveAttribute('href', '/provas')
   })
 
-  it('a aba "Nova prova" fica ativa em /provas/:id', async () => {
+  it('a aba "Provas" fica ativa em /provas/:id', async () => {
     renderAt('/provas/inexistente')
     await waitFor(() =>
-      expect(screen.getByRole('link', { name: 'Nova prova' })).toHaveAttribute('aria-current', 'page'),
+      expect(screen.getByRole('link', { name: 'Provas' })).toHaveAttribute('aria-current', 'page'),
     )
   })
 })

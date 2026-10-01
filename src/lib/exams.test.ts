@@ -16,7 +16,10 @@ import {
   setCorreta,
   updateExam,
   validateQuestions,
-  withQuestions,
+  withEdits,
+  sortExams,
+  deleteExam,
+  duplicateExam,
   rotuloDificuldade,
   validateParams,
   type Exam,
@@ -349,13 +352,71 @@ describe('questionsEqual', () => {
   })
 })
 
-describe('withQuestions', () => {
-  it('troca as questões e renova atualizadoEm, sem mexer em criadoEm', () => {
+describe('withEdits', () => {
+  it('troca título e questões e renova atualizadoEm, sem mexer em criadoEm', () => {
     const original = { ...provaMinima('a'), criadoEm: '2026-01-01T00:00:00.000Z', atualizadoEm: '2026-01-01T00:00:00.000Z' }
-    const nova = withQuestions(original, [questao({ enunciado: 'Novo' })])
+    const nova = withEdits(original, { titulo: 'Outro título', questoes: [questao({ enunciado: 'Novo' })] })
+    expect(nova.titulo).toBe('Outro título')
     expect(nova.questoes[0].enunciado).toBe('Novo')
     expect(nova.criadoEm).toBe(original.criadoEm)
     expect(nova.atualizadoEm).not.toBe(original.atualizadoEm)
     expect(original.questoes[0].enunciado).not.toBe('Novo')
+    expect(original.titulo).toBe('T')
+  })
+})
+
+describe('sortExams', () => {
+  it('ordena por criadoEm decrescente, sem mutar a lista', () => {
+    const a = { ...provaMinima('a'), criadoEm: '2026-01-01T00:00:00.000Z' }
+    const b = { ...provaMinima('b'), criadoEm: '2026-03-01T00:00:00.000Z' }
+    const c = { ...provaMinima('c'), criadoEm: '2026-02-01T00:00:00.000Z' }
+    const lista = [a, b, c]
+    expect(sortExams(lista).map((p) => p.id)).toEqual(['b', 'c', 'a'])
+    expect(lista.map((p) => p.id)).toEqual(['a', 'b', 'c'])
+  })
+})
+
+describe('deleteExam', () => {
+  it('remove só a prova de mesmo id', () => {
+    const data = { version: 1 as const, provas: [provaMinima('a'), provaMinima('b')] }
+    expect(deleteExam(data, 'a').provas.map((p) => p.id)).toEqual(['b'])
+  })
+
+  it('tolera dado corrompido', () => {
+    expect(deleteExam(null as never, 'a')).toEqual({ version: 1, provas: [] })
+  })
+})
+
+describe('duplicateExam', () => {
+  const completa = { ...provaMinima('a', 'Células'), params: params(), perfil: { id: 'p1', nome: 'Manhã', escola: 'Alfa', secretaria: '', logo: '', professora: '', anoLetivo: '2026' } }
+  const original = { ...completa, criadoEm: '2026-01-01T00:00:00.000Z', atualizadoEm: '2026-01-02T00:00:00.000Z' }
+  const agora = '2026-05-05T12:00:00.000Z'
+
+  it('gera id novo, título "(cópia)" e datas de agora', () => {
+    const copia = duplicateExam(original, agora, 'novo-id')
+    expect(copia.id).toBe('novo-id')
+    expect(copia.titulo).toBe('Células (cópia)')
+    expect(copia.criadoEm).toBe(agora)
+    expect(copia.atualizadoEm).toBe(agora)
+  })
+
+  it('usa um id aleatório quando não informado', () => {
+    expect(duplicateExam(original, agora).id).not.toBe(original.id)
+  })
+
+  it('mantém o snapshot do perfil e os parâmetros', () => {
+    const copia = duplicateExam(original, agora, 'x')
+    expect(copia.perfil).toEqual(original.perfil)
+    expect(copia.params).toEqual(original.params)
+    expect(copia.perfil).not.toBe(original.perfil)
+  })
+
+  it('é independente: alterar a cópia não altera a original', () => {
+    const copia = duplicateExam(original, agora, 'x')
+    expect(copia.questoes).not.toBe(original.questoes)
+    expect(copia.questoes[0]).not.toBe(original.questoes[0])
+    expect(copia.questoes[0].alternativas).not.toBe(original.questoes[0].alternativas)
+    copia.questoes[0].alternativas[0] = 'mudou'
+    expect(original.questoes[0].alternativas[0]).not.toBe('mudou')
   })
 })

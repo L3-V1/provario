@@ -3,10 +3,10 @@ import brasao from "../images/brasao-cor-vertical.png";
 import logoPms from "../images/logo-pms-bco.png";
 
 // Cada seção do app é uma divisória do fichário; a ativa se emenda à folha e leva o grifo de marca-texto.
-// `secao` é o prefixo cujas rotas também acendem a aba (ex.: /provas/:id acende "Nova prova").
-const abas: { to: string; label: string; secao?: string }[] = [
+// A aba ativa vale para a rota e para as filhas dela (ex.: /provas/nova e /provas/:id acendem "Provas").
+const abas: { to: string; label: string }[] = [
   { to: "/", label: "Início" },
-  { to: "/provas/nova", label: "Nova prova", secao: "/provas" },
+  { to: "/provas", label: "Provas" },
   { to: "/perfis", label: "Perfis" },
   { to: "/configuracoes", label: "Configurações" },
 ];
@@ -28,11 +28,10 @@ export default function Layout() {
           className="order-first -mb-0.5 flex gap-1.5 overflow-x-auto pl-8 sm:pl-10 md:order-last md:mb-0 md:-ml-0.5 md:flex-col md:gap-2 md:overflow-visible md:pt-36 md:pl-0 print:hidden"
         >
           {abas.map((a) => {
-            const base = a.secao ?? a.to;
             const ativa =
               a.to === "/"
                 ? pathname === "/"
-                : pathname === base || pathname.startsWith(`${base}/`);
+                : pathname === a.to || pathname.startsWith(`${a.to}/`);
             return (
               <Link
                 key={a.to}

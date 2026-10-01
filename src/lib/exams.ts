@@ -87,9 +87,32 @@ export function updateExam(data: ExamsData, exam: Exam): ExamsData {
   return { version: 1, provas: listExams(data).map((p) => (p.id === exam.id ? exam : p)) }
 }
 
-/** A prova com novas questões e `atualizadoEm` de agora. */
-export function withQuestions(exam: Exam, questoes: Question[]): Exam {
-  return { ...exam, questoes, atualizadoEm: new Date().toISOString() }
+/** A prova com novo título e novas questões e `atualizadoEm` de agora. */
+export function withEdits(exam: Exam, edits: { titulo: string; questoes: Question[] }): Exam {
+  return { ...exam, titulo: edits.titulo, questoes: edits.questoes, atualizadoEm: new Date().toISOString() }
+}
+
+/** Provas da mais recente para a mais antiga (por `criadoEm`). */
+export function sortExams(provas: Exam[]): Exam[] {
+  return [...provas].sort((a, b) => b.criadoEm.localeCompare(a.criadoEm))
+}
+
+export function deleteExam(data: ExamsData, id: string): ExamsData {
+  return { version: 1, provas: listExams(data).filter((p) => p.id !== id) }
+}
+
+/** Cópia independente: id novo, título "… (cópia)", datas de `agora`; o snapshot do perfil é mantido. */
+export function duplicateExam(exam: Exam, agora: string, id: string = crypto.randomUUID()): Exam {
+  return {
+    ...exam,
+    id,
+    titulo: `${exam.titulo} (cópia)`,
+    params: { ...exam.params },
+    perfil: { ...exam.perfil },
+    questoes: exam.questoes.map((q) => ({ ...q, alternativas: [...q.alternativas] })),
+    criadoEm: agora,
+    atualizadoEm: agora,
+  }
 }
 
 export function defaultTitle(p: Pick<ExamParams, 'disciplina' | 'serie'>): string {

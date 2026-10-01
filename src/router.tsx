@@ -6,6 +6,7 @@ import NovaProva from './pages/NovaProva'
 import PerfilForm from './pages/PerfilForm'
 import Perfis from './pages/Perfis'
 import Prova from './pages/Prova'
+import Provas from './pages/Provas'
 
 export const routes = [
   {
@@ -13,6 +14,7 @@ export const routes = [
     element: <Layout />,
     children: [
       { index: true, element: <Inicio /> },
+      { path: 'provas', element: <Provas /> },
       { path: 'provas/nova', element: <NovaProva /> },
       { path: 'provas/:id', element: <Prova /> },
       { path: 'perfis', element: <Perfis /> },

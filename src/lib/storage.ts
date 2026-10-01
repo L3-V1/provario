@@ -47,6 +47,23 @@ export function writeItem<T>(key: string, value: T): void {
   notify(key)
 }
 
+/** Regrava um valor bruto lido antes por `readRaw` (ou remove a chave, se era `null`), sem reserializar. */
+export function writeRaw(key: string, raw: string | null): void {
+  if (raw === null) {
+    removeItem(key)
+    return
+  }
+  try {
+    localStorage.setItem(PREFIX + key, raw)
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'QuotaExceededError') {
+      throw new StorageQuotaError()
+    }
+    throw err
+  }
+  notify(key)
+}
+
 export function removeItem(key: string): void {
   try {
     localStorage.removeItem(PREFIX + key)

@@ -130,7 +130,7 @@ Uma professora de Ciências do Ensino Fundamental II da rede pública de Santos 
 - Excluir uma questão renumera as demais e o gabarito
 
 ## Fase 6 — Histórico e backup
-**Status:** pendente
+**Status:** concluída
 **Objetivo:** Deixar a professora reaproveitar provas antigas e proteger os dados contra perda.
 **Entregas:**
 - Tela de histórico com as provas salvas (título, conteúdo, série, perfil e data)
