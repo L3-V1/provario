@@ -26,60 +26,83 @@ function limpar(texto: string): string {
 
 const texto = (v: unknown) => (typeof v === 'string' ? v : '')
 
-/** Valida a resposta do Gemini contra o que foi pedido; só devolve questões prontas para salvar. */
-export function parseExamResponse(body: unknown, params: ExamParams): ParseResult {
+type Extraido = { ok: true; dados: unknown } | Extract<ParseResult, { ok: false }>
+
+/** Trata bloqueio, truncamento e JSON da resposta; o formato do conteúdo é problema de quem chama. */
+function extrairDados(body: unknown): Extraido {
   const b = (body ?? {}) as Body
   const candidato = b.candidates?.[0]
 
   if (b.promptFeedback?.blockReason || candidato?.finishReason === 'SAFETY') {
-    return falha('blocked', 'O Gemini bloqueou o conteúdo.')
+    return falha('blocked', 'O Gemini bloqueou o conteúdo.') as Extraido
   }
   if (candidato?.finishReason === 'MAX_TOKENS') {
-    return falha('truncated', 'A resposta foi cortada antes de terminar.')
+    return falha('truncated', 'A resposta foi cortada antes de terminar.') as Extraido
   }
 
   const bruto = (candidato?.content?.parts ?? [])
     .filter((p) => !p.thought && typeof p.text === 'string')
     .map((p) => p.text as string)
     .join('')
-  if (!bruto.trim()) return falha('format', 'A resposta veio vazia.')
+  if (!bruto.trim()) return falha('format', 'A resposta veio vazia.') as Extraido
 
-  let dados: unknown
   try {
-    dados = JSON.parse(bruto)
+    return { ok: true, dados: JSON.parse(bruto) }
   } catch {
-    return falha('format', 'A resposta não é um JSON válido.')
+    return falha('format', 'A resposta não é um JSON válido.') as Extraido
   }
+}
 
-  const lista = (dados as { questoes?: unknown } | null)?.questoes
+type QuestaoResult = { ok: true; questao: Question } | { ok: false; motivo: string }
+
+/** Valida uma questão crua; `n` é o número mostrado nas mensagens de erro. */
+function parseQuestion(item: unknown, n: number, alternativasEsperadas: number): QuestaoResult {
+  const erro = (motivo: string): QuestaoResult => ({ ok: false, motivo })
+  const raw = (item ?? {}) as { enunciado?: unknown; alternativas?: unknown; correta?: unknown }
+  const enunciado = limpar(texto(raw.enunciado))
+  if (!enunciado) return erro(`A questão ${n} está sem enunciado.`)
+
+  if (!Array.isArray(raw.alternativas) || raw.alternativas.length !== alternativasEsperadas) {
+    return erro(`A questão ${n} não tem ${alternativasEsperadas} alternativas.`)
+  }
+  const alternativas = raw.alternativas.map((a) => limpar(texto(a)))
+  if (alternativas.some((a) => a === '')) return erro(`A questão ${n} tem alternativa vazia.`)
+  const unicas = new Set(alternativas.map((a) => a.toLocaleLowerCase('pt-BR')))
+  if (unicas.size !== alternativas.length) return erro(`A questão ${n} tem alternativas repetidas.`)
+
+  const correta = letras(alternativasEsperadas).indexOf(texto(raw.correta).trim().toUpperCase())
+  if (correta === -1) return erro(`A questão ${n} está sem gabarito válido.`)
+
+  return { ok: true, questao: { enunciado, alternativas, correta } }
+}
+
+/** Valida a resposta do Gemini contra o que foi pedido; só devolve questões prontas para salvar. */
+export function parseExamResponse(body: unknown, params: ExamParams): ParseResult {
+  const extraido = extrairDados(body)
+  if (!extraido.ok) return extraido
+
+  const lista = (extraido.dados as { questoes?: unknown } | null)?.questoes
   if (!Array.isArray(lista) || lista.length !== params.quantidade) {
     return falha('format', `Esperava ${params.quantidade} questões, mas vieram ${Array.isArray(lista) ? lista.length : 0}.`)
   }
 
-  const validas = letras(params.alternativas)
   const questoes: Question[] = []
   for (const [i, item] of lista.entries()) {
-    const n = i + 1
-    const raw = (item ?? {}) as { enunciado?: unknown; alternativas?: unknown; correta?: unknown }
-    const enunciado = limpar(texto(raw.enunciado))
-    if (!enunciado) return falha('format', `A questão ${n} está sem enunciado.`)
-
-    if (!Array.isArray(raw.alternativas) || raw.alternativas.length !== params.alternativas) {
-      return falha('format', `A questão ${n} não tem ${params.alternativas} alternativas.`)
-    }
-    const alternativas = raw.alternativas.map((a) => limpar(texto(a)))
-    if (alternativas.some((a) => a === '')) {
-      return falha('format', `A questão ${n} tem alternativa vazia.`)
-    }
-    const unicas = new Set(alternativas.map((a) => a.toLocaleLowerCase('pt-BR')))
-    if (unicas.size !== alternativas.length) {
-      return falha('format', `A questão ${n} tem alternativas repetidas.`)
-    }
-
-    const correta = validas.indexOf(texto(raw.correta).trim().toUpperCase())
-    if (correta === -1) return falha('format', `A questão ${n} está sem gabarito válido.`)
-
-    questoes.push({ enunciado, alternativas, correta })
+    const r = parseQuestion(item, i + 1, params.alternativas)
+    if (!r.ok) return falha('format', r.motivo)
+    questoes.push(r.questao)
   }
   return { ok: true, questoes }
+}
+
+export type QuestionParseResult =
+  | { ok: true; questao: Question }
+  | { ok: false; kind: 'format' | 'blocked' | 'truncated'; motivo: string }
+
+/** Valida a resposta do Gemini para a regeração de uma única questão. */
+export function parseQuestionResponse(body: unknown, alternativas: number): QuestionParseResult {
+  const extraido = extrairDados(body)
+  if (!extraido.ok) return extraido
+  const r = parseQuestion(extraido.dados, 1, alternativas)
+  return r.ok ? r : { ok: false, kind: 'format', motivo: r.motivo }
 }

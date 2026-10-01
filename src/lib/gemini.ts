@@ -1,6 +1,6 @@
 import type { ExamParams, Question } from './exams'
-import { buildExamPrompt, examResponseSchema } from './examPrompt'
-import { parseExamResponse } from './examResponse'
+import { buildExamPrompt, buildQuestionPrompt, examResponseSchema, questionResponseSchema } from './examPrompt'
+import { parseExamResponse, parseQuestionResponse } from './examResponse'
 
 // Modelo Flash estável mais recente confirmado em ai.google.dev/gemini-api/docs/models (30/09/2026).
 export const GEMINI_MODEL = 'gemini-3.8-flash'
@@ -155,15 +155,36 @@ const MSG_FORMATO =
 const MSG_BLOQUEIO =
   'O Gemini se recusou a gerar esse conteúdo. Reformule o conteúdo ou as observações.'
 
+const MSG_SEM_CHAVE = 'Configure a chave do Gemini antes de gerar uma prova.'
+
+type Validacao<T> =
+  | { ok: true; valor: T }
+  | { ok: false; kind: 'format' | 'blocked' | 'truncated' }
+
+/** Chama o Gemini e valida a resposta. Fora do formato ganha uma nova tentativa automática; depois disso, erro. */
+async function gerarValidado<T>(
+  apiKey: string,
+  body: unknown,
+  validar: (corpo: unknown) => Validacao<T>,
+): Promise<({ ok: true; valor: T; modelo: string }) | GeminiFailure> {
+  if (!apiKey.trim()) return fail('missing-key', MSG_SEM_CHAVE)
+
+  try {
+    for (let tentativa = 0; tentativa < 2; tentativa++) {
+      const { res, modelo } = await generateContent(apiKey, body, GENERATION_TIMEOUT_MS)
+      if (!res.ok) return await mapResponse(res)
+      const r = validar(await res.json().catch(() => null))
+      if (r.ok) return { ok: true, valor: r.valor, modelo }
+      if (r.kind === 'blocked') return fail('blocked', MSG_BLOQUEIO)
+    }
+    return fail('invalid-response', MSG_FORMATO)
+  } catch (err) {
+    return mapError(err)
+  }
+}
+
 /** Gera a prova. Resposta fora do formato ganha uma nova tentativa automática; depois disso, erro. */
 export async function generateExam(apiKey: string, params: ExamParams): Promise<ExamResult> {
-  if (!apiKey.trim()) {
-    return {
-      ok: false,
-      kind: 'missing-key',
-      message: 'Configure a chave do Gemini antes de gerar uma prova.',
-    }
-  }
   const body = {
     contents: [{ parts: [{ text: buildExamPrompt(params) }] }],
     generationConfig: {
@@ -171,17 +192,41 @@ export async function generateExam(apiKey: string, params: ExamParams): Promise<
       responseSchema: examResponseSchema(params),
     },
   }
+  const r = await gerarValidado(apiKey, body, (corpo) => {
+    const p = parseExamResponse(corpo, params)
+    return p.ok ? { ok: true, valor: p.questoes } : p
+  })
+  return r.ok ? { ok: true, questoes: r.valor, modelo: r.modelo } : r
+}
 
-  try {
-    for (let tentativa = 0; tentativa < 2; tentativa++) {
-      const { res, modelo } = await generateContent(apiKey, body, GENERATION_TIMEOUT_MS)
-      if (!res.ok) return await mapResponse(res)
-      const r = parseExamResponse(await res.json().catch(() => null), params)
-      if (r.ok) return { ok: true, questoes: r.questoes, modelo }
-      if (r.kind === 'blocked') return { ok: false, kind: 'blocked', message: MSG_BLOQUEIO }
-    }
-    return { ok: false, kind: 'invalid-response', message: MSG_FORMATO }
-  } catch (err) {
-    return mapError(err)
+export type QuestionResult = { ok: true; questao: Question; modelo: string } | GeminiFailure
+
+const normalizar = (texto: string) => texto.trim().toLocaleLowerCase('pt-BR')
+
+/**
+ * Pede ao Gemini uma questão nova para ocupar o lugar de `atual`, com o mesmo número de alternativas.
+ * Enunciado igual ao de outra questão da prova conta como resposta fora do formato.
+ */
+export async function regenerateQuestion(
+  apiKey: string,
+  params: ExamParams,
+  outras: Question[],
+  atual: Question,
+): Promise<QuestionResult> {
+  const alternativas = atual.alternativas.length
+  const body = {
+    contents: [{ parts: [{ text: buildQuestionPrompt(params, outras, atual) }] }],
+    generationConfig: {
+      responseMimeType: 'application/json',
+      responseSchema: questionResponseSchema(alternativas),
+    },
   }
+  const existentes = new Set(outras.map((q) => normalizar(q.enunciado)))
+  const r = await gerarValidado(apiKey, body, (corpo) => {
+    const p = parseQuestionResponse(corpo, alternativas)
+    if (!p.ok) return p
+    if (existentes.has(normalizar(p.questao.enunciado))) return { ok: false, kind: 'format' }
+    return { ok: true, valor: p.questao }
+  })
+  return r.ok ? { ok: true, questao: r.valor, modelo: r.modelo } : r
 }

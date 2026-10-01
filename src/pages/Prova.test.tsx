@@ -188,3 +188,341 @@ describe('Prova — não encontrada', () => {
     expect(screen.getByRole('link', { name: 'Gerar uma nova prova' })).toHaveAttribute('href', '/provas/nova')
   })
 })
+
+function lerSalvo(): Exam {
+  return (JSON.parse(localStorage.getItem('provario:exams')!) as ExamsData).provas[0]
+}
+
+function semearChave(chave = 'chave-teste') {
+  localStorage.setItem('provario:settings', JSON.stringify({ version: 1, geminiApiKey: chave }))
+}
+
+function mockFetch(impl: typeof fetch) {
+  const fn = vi.fn(impl)
+  vi.stubGlobal('fetch', fn)
+  return fn
+}
+
+const respostaQuestao = (over: Record<string, unknown> = {}) =>
+  new Response(
+    JSON.stringify({
+      candidates: [
+        {
+          content: {
+            parts: [
+              {
+                text: JSON.stringify({
+                  enunciado: 'Pergunta regerada?',
+                  alternativas: ['r1', 'r2', 'r3', 'r4', 'r5'],
+                  correta: 'E',
+                  ...over,
+                }),
+              },
+            ],
+          },
+          finishReason: 'STOP',
+        },
+      ],
+    }),
+    { status: 200 },
+  )
+
+const enunciado = (n: number) => screen.getByRole('textbox', { name: `Enunciado da questão ${n}` })
+const alternativa = (n: number, letra: string) =>
+  screen.getByRole('textbox', { name: `Alternativa ${letra} da questão ${n}` })
+const gabarito = () =>
+  within(screen.getByRole('region', { name: /Gabarito/ }))
+    .getAllByRole('listitem')
+    .map((li) => li.textContent)
+
+async function entrarEmEdicao() {
+  await userEvent.click(screen.getByRole('button', { name: 'Editar prova' }))
+}
+
+async function reescrever(campo: HTMLElement, texto: string) {
+  await userEvent.clear(campo)
+  await userEvent.type(campo, texto)
+}
+
+describe('Prova — modo edição', () => {
+  it('Quando clica em "Editar prova", então mostra enunciados e alternativas preenchidos no lugar da folha', async () => {
+    semear()
+    renderProva()
+    await entrarEmEdicao()
+
+    expect(enunciado(1)).toHaveValue('Pergunta 1 sobre células?')
+    expect(alternativa(3, 'c')).toHaveValue('Opção 3.3')
+    expect(screen.getByRole('radio', { name: 'Marcar alternativa c como correta da questão 3' })).toBeChecked()
+    expect(screen.queryByRole('article', { name: 'Prova' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Imprimir/ })).toBeDisabled()
+  })
+
+  it('Dado que editou, quando clica em "Descartar" e confirma, então o salvo não muda', async () => {
+    semear()
+    renderProva()
+    await entrarEmEdicao()
+    await reescrever(enunciado(1), 'Texto descartado')
+    await userEvent.click(screen.getByRole('button', { name: 'Descartar' }))
+    await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Descartar alterações' }))
+
+    expect(screen.getByRole('article', { name: 'Prova' })).toHaveTextContent('Pergunta 1 sobre células?')
+    expect(lerSalvo()).toEqual(prova())
+  })
+
+  it('Dado que não editou nada, quando clica em "Descartar", então volta sem pedir confirmação', async () => {
+    semear()
+    renderProva()
+    await entrarEmEdicao()
+    await userEvent.click(screen.getByRole('button', { name: 'Descartar' }))
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(screen.getByRole('article', { name: 'Prova' })).toBeInTheDocument()
+  })
+
+  it('Dado que editou enunciado e alternativa, quando salva, então grava, atualiza atualizadoEm e a folha mostra o texto', async () => {
+    semear()
+    const router = renderProva()
+    await entrarEmEdicao()
+    await reescrever(enunciado(2), '  Novo enunciado?  ')
+    await reescrever(alternativa(2, 'a'), 'Nova opção')
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar alterações' }))
+
+    const salvo = lerSalvo()
+    expect(salvo.questoes[1].enunciado).toBe('Novo enunciado?')
+    expect(salvo.questoes[1].alternativas[0]).toBe('Nova opção')
+    expect(salvo.atualizadoEm).not.toBe('2026-03-10T10:00:00.000Z')
+    expect(salvo.criadoEm).toBe('2026-03-10T10:00:00.000Z')
+    expect(screen.getByText('Alterações salvas.')).toBeInTheDocument()
+    const folha = screen.getByRole('article', { name: 'Prova' })
+    expect(within(folha).getByText('2. Novo enunciado?')).toBeInTheDocument()
+    expect(within(folha).getByText('a) Nova opção')).toBeInTheDocument()
+
+    // recarregar (remontar a rota) mantém
+    cleanup()
+    router.dispose()
+    renderProva()
+    expect(screen.getByText('2. Novo enunciado?')).toBeInTheDocument()
+  })
+
+  it('Quando troca a alternativa correta e salva, então a célula do gabarito muda', async () => {
+    semear()
+    renderProva()
+    await entrarEmEdicao()
+    await userEvent.click(screen.getByRole('radio', { name: 'Marcar alternativa e como correta da questão 1' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar alterações' }))
+
+    expect(lerSalvo().questoes[0].correta).toBe(4)
+    expect(gabarito()).toEqual(['1 – e', '2 – b', '3 – c', '4 – d', '5 – e'])
+  })
+
+  it('Quando exclui uma questão e confirma, então renumera questões e gabarito', async () => {
+    semear()
+    renderProva()
+    await entrarEmEdicao()
+    await userEvent.click(screen.getAllByRole('button', { name: /Excluir questão 2/ })[0])
+    await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Excluir questão' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar alterações' }))
+
+    expect(lerSalvo().questoes).toHaveLength(4)
+    const lista = within(screen.getByRole('article', { name: 'Prova' })).getByRole('list', { name: 'Questões' })
+    const itens = within(lista).getAllByRole('listitem').filter((li) => li.parentElement === lista)
+    expect(itens).toHaveLength(4)
+    expect(screen.getByText('2. Pergunta 3 sobre células?')).toBeInTheDocument()
+    expect(screen.queryByText(/Pergunta 2 sobre/)).not.toBeInTheDocument()
+    expect(gabarito()).toEqual(['1 – a', '2 – c', '3 – d', '4 – e'])
+  })
+
+  it('Cancelar a exclusão mantém a questão', async () => {
+    semear()
+    renderProva()
+    await entrarEmEdicao()
+    await userEvent.click(screen.getByRole('button', { name: /Excluir questão 1/ }))
+    await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Cancelar' }))
+    expect(enunciado(1)).toHaveValue('Pergunta 1 sobre células?')
+    expect(screen.getAllByRole('textbox', { name: /^Enunciado da questão/ })).toHaveLength(5)
+  })
+
+  it('Dado que sobrou uma questão, então "Excluir questão" fica desabilitado', async () => {
+    const uma = prova().questoes.slice(0, 1)
+    semear(prova({ questoes: uma }))
+    renderProva()
+    await entrarEmEdicao()
+    expect(screen.getByRole('button', { name: /Excluir questão 1/ })).toBeDisabled()
+  })
+
+  it('Dado enunciado vazio, quando salva, então mostra erro inline, foca o campo e não grava', async () => {
+    semear()
+    renderProva()
+    await entrarEmEdicao()
+    await userEvent.clear(enunciado(3))
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar alterações' }))
+
+    expect(screen.getByText('Escreva o enunciado.')).toBeInTheDocument()
+    expect(enunciado(3)).toHaveFocus()
+    expect(enunciado(3)).toHaveAttribute('aria-invalid', 'true')
+    expect(lerSalvo()).toEqual(prova())
+    expect(screen.getByRole('button', { name: 'Salvar alterações' })).toBeInTheDocument()
+  })
+
+  it('Dado alternativas repetidas, quando salva, então mostra erro e não grava', async () => {
+    semear()
+    renderProva()
+    await entrarEmEdicao()
+    await reescrever(alternativa(1, 'b'), 'OPÇÃO 1.1')
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar alterações' }))
+
+    expect(screen.getByText('Há alternativas repetidas.')).toBeInTheDocument()
+    expect(lerSalvo()).toEqual(prova())
+  })
+
+  it('Dado alternativa vazia, quando salva, então mostra erro na alternativa e não grava', async () => {
+    semear()
+    renderProva()
+    await entrarEmEdicao()
+    await userEvent.clear(alternativa(4, 'd'))
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar alterações' }))
+
+    expect(screen.getByText('Preencha esta alternativa.')).toBeInTheDocument()
+    expect(alternativa(4, 'd')).toHaveFocus()
+    expect(lerSalvo()).toEqual(prova())
+  })
+
+  it('Dado armazenamento cheio, quando salva, então mostra erro e continua editando', async () => {
+    semear()
+    semearChave()
+    renderProva()
+    await entrarEmEdicao()
+    await reescrever(enunciado(1), 'Mudou')
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('cheio', 'QuotaExceededError')
+    })
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar alterações' }))
+    setItem.mockRestore()
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/armazenamento do navegador está cheio/)
+    expect(enunciado(1)).toHaveValue('Mudou')
+  })
+
+  it('Dado alterações pendentes, quando tenta sair, então pede confirmação e permite continuar editando', async () => {
+    semear()
+    const router = renderProva()
+    await entrarEmEdicao()
+    await reescrever(enunciado(1), 'Mudou')
+    await act(() => router.navigate('/perfis'))
+
+    const dialogo = await screen.findByRole('alertdialog')
+    expect(dialogo).toHaveTextContent('Sair sem salvar?')
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Cancelar' }))
+    expect(router.state.location.pathname).toBe('/provas/e1')
+    expect(enunciado(1)).toHaveValue('Mudou')
+
+    await act(() => router.navigate('/perfis'))
+    await userEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Sair sem salvar' }))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/perfis'))
+    expect(lerSalvo()).toEqual(prova())
+  })
+
+  it('Dado que não há alterações, quando sai, então não pede confirmação', async () => {
+    semear()
+    const router = renderProva()
+    await entrarEmEdicao()
+    await act(() => router.navigate('/perfis'))
+    expect(router.state.location.pathname).toBe('/perfis')
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+  })
+})
+
+describe('Prova — regerar questão', () => {
+  it('Quando regera, então manda as demais questões, troca só aquela e o gabarito, e "Desfazer" restaura', async () => {
+    semear()
+    semearChave()
+    const fn = mockFetch(async () => respostaQuestao())
+    renderProva()
+    await entrarEmEdicao()
+    await userEvent.click(screen.getByRole('button', { name: /Regerar questão 2/ }))
+
+    await waitFor(() => expect(enunciado(2)).toHaveValue('Pergunta regerada?'))
+    const prompt = JSON.parse(fn.mock.calls[0][1]!.body as string).contents[0].parts[0].text as string
+    expect(prompt).toContain('Pergunta 1 sobre células?')
+    expect(prompt).toContain('Pergunta 2 sobre células?')
+    expect(prompt).toContain('Pergunta 5 sobre células?')
+    expect(enunciado(1)).toHaveValue('Pergunta 1 sobre células?')
+    expect(enunciado(3)).toHaveValue('Pergunta 3 sobre células?')
+    expect(screen.getByRole('radio', { name: 'Marcar alternativa e como correta da questão 2' })).toBeChecked()
+    expect(screen.getByText('Questão 2 regerada.')).toBeInTheDocument()
+    expect(lerSalvo()).toEqual(prova()) // ainda é só rascunho
+
+    await userEvent.click(screen.getByRole('button', { name: 'Desfazer' }))
+    expect(enunciado(2)).toHaveValue('Pergunta 2 sobre células?')
+    expect(alternativa(2, 'a')).toHaveValue('Opção 2.1')
+    expect(screen.getByRole('radio', { name: 'Marcar alternativa b como correta da questão 2' })).toBeChecked()
+    expect(screen.queryByRole('button', { name: 'Desfazer' })).not.toBeInTheDocument()
+  })
+
+  it('Dado que regerou e salvou, então a prova e o gabarito refletem a nova questão', async () => {
+    semear()
+    semearChave()
+    mockFetch(async () => respostaQuestao())
+    renderProva()
+    await entrarEmEdicao()
+    await userEvent.click(screen.getByRole('button', { name: /Regerar questão 2/ }))
+    await waitFor(() => expect(enunciado(2)).toHaveValue('Pergunta regerada?'))
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar alterações' }))
+
+    expect(screen.getByText('2. Pergunta regerada?')).toBeInTheDocument()
+    expect(gabarito()).toEqual(['1 – a', '2 – e', '3 – c', '4 – d', '5 – e'])
+  })
+
+  it('Enquanto regera, mostra "Regerando…" e desabilita as ações', async () => {
+    semear()
+    semearChave()
+    let liberar!: (r: Response) => void
+    mockFetch(() => new Promise<Response>((resolve) => (liberar = resolve)))
+    renderProva()
+    await entrarEmEdicao()
+    await userEvent.click(screen.getByRole('button', { name: /Regerar questão 1/ }))
+
+    expect(screen.getByRole('status')).toHaveTextContent('Regerando…')
+    expect(screen.getByRole('button', { name: /Regerar questão 3/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Salvar alterações' })).toBeDisabled()
+    await act(async () => liberar(respostaQuestao()))
+    await waitFor(() => expect(screen.queryByText('Regerando…')).not.toBeInTheDocument())
+    expect(screen.getByRole('button', { name: /Regerar questão 3/ })).toBeEnabled()
+  })
+
+  it('Dado falha da API, então mostra o erro e não mexe na questão', async () => {
+    semear()
+    semearChave()
+    mockFetch(async () => new Response('{}', { status: 429 }))
+    renderProva()
+    await entrarEmEdicao()
+    await userEvent.click(screen.getByRole('button', { name: /Regerar questão 2/ }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Limite do plano gratuito')
+    expect(enunciado(2)).toHaveValue('Pergunta 2 sobre células?')
+    expect(screen.queryByRole('button', { name: 'Desfazer' })).not.toBeInTheDocument()
+  })
+
+  it('Dado que não há chave do Gemini, então "Regerar questão" fica desabilitado e há link para Configurações', async () => {
+    semear()
+    const fn = mockFetch(async () => respostaQuestao())
+    renderProva()
+    await entrarEmEdicao()
+
+    for (let n = 1; n <= 5; n++) expect(screen.getByRole('button', { name: new RegExp(`Regerar questão ${n}`) })).toBeDisabled()
+    expect(screen.getByRole('link', { name: 'Ir para Configurações' })).toHaveAttribute('href', '/configuracoes')
+    expect(fn).not.toHaveBeenCalled()
+  })
+
+  it('Regerar usa o texto do rascunho (o que a professora vê), não o salvo', async () => {
+    semear()
+    semearChave()
+    const fn = mockFetch(async () => respostaQuestao())
+    renderProva()
+    await entrarEmEdicao()
+    await reescrever(enunciado(1), 'Texto editado e ainda não salvo')
+    await userEvent.click(screen.getByRole('button', { name: /Regerar questão 3/ }))
+    await waitFor(() => expect(fn).toHaveBeenCalled())
+    const prompt = JSON.parse(fn.mock.calls[0][1]!.body as string).contents[0].parts[0].text as string
+    expect(prompt).toContain('Texto editado e ainda não salvo')
+  })
+})

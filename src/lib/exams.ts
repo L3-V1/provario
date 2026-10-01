@@ -82,6 +82,16 @@ export function addExam(data: ExamsData, exam: Exam): ExamsData {
   return { version: 1, provas: [...listExams(data), exam] }
 }
 
+/** Substitui a prova de mesmo `id`; as outras ficam como estão. */
+export function updateExam(data: ExamsData, exam: Exam): ExamsData {
+  return { version: 1, provas: listExams(data).map((p) => (p.id === exam.id ? exam : p)) }
+}
+
+/** A prova com novas questões e `atualizadoEm` de agora. */
+export function withQuestions(exam: Exam, questoes: Question[]): Exam {
+  return { ...exam, questoes, atualizadoEm: new Date().toISOString() }
+}
+
 export function defaultTitle(p: Pick<ExamParams, 'disciplina' | 'serie'>): string {
   return `Avaliação de ${p.disciplina} — ${p.serie}`
 }
@@ -158,4 +168,70 @@ export function linhaIdentificacao(prova: Exam): string[] {
     params.serie,
     perfil.anoLetivo.trim(),
   ].filter((item) => item !== '')
+}
+
+export interface QuestionError {
+  enunciado?: string
+  /** Mensagem por alternativa vazia, na posição dela. */
+  alternativas?: (string | undefined)[]
+  repetidas?: string
+  correta?: string
+}
+
+/** Erros por índice de questão; questões válidas não aparecem. */
+export type QuestionErrors = Record<number, QuestionError>
+
+export function validateQuestions(questoes: Question[]): QuestionErrors {
+  const erros: QuestionErrors = {}
+  questoes.forEach((q, i) => {
+    const erro: QuestionError = {}
+    if (q.enunciado.trim() === '') erro.enunciado = 'Escreva o enunciado.'
+
+    const vazias = q.alternativas.map((a) => (a.trim() === '' ? 'Preencha esta alternativa.' : undefined))
+    if (vazias.some(Boolean)) erro.alternativas = vazias
+
+    const preenchidas = q.alternativas.map((a) => a.trim().toLocaleLowerCase('pt-BR')).filter((a) => a !== '')
+    if (new Set(preenchidas).size !== preenchidas.length) erro.repetidas = 'Há alternativas repetidas.'
+
+    if (!Number.isInteger(q.correta) || q.correta < 0 || q.correta >= q.alternativas.length) {
+      erro.correta = 'Marque a alternativa correta.'
+    }
+    if (Object.keys(erro).length > 0) erros[i] = erro
+  })
+  return erros
+}
+
+export function normalizeQuestions(questoes: Question[]): Question[] {
+  return questoes.map((q) => ({
+    ...q,
+    enunciado: q.enunciado.trim(),
+    alternativas: q.alternativas.map((a) => a.trim()),
+  }))
+}
+
+/** Remove a questão `i`; a prova nunca fica sem questões (devolve a mesma lista). A numeração é a posição. */
+export function removeQuestion(questoes: Question[], i: number): Question[] {
+  if (questoes.length <= 1) return questoes
+  return questoes.filter((_, j) => j !== i)
+}
+
+export function replaceQuestion(questoes: Question[], i: number, questao: Question): Question[] {
+  return questoes.map((q, j) => (j === i ? questao : q))
+}
+
+export function setCorreta(questoes: Question[], i: number, correta: number): Question[] {
+  return questoes.map((q, j) => (j === i ? { ...q, correta } : q))
+}
+
+export function questionsEqual(a: Question[], b: Question[]): boolean {
+  return (
+    a.length === b.length &&
+    a.every(
+      (q, i) =>
+        q.enunciado === b[i].enunciado &&
+        q.correta === b[i].correta &&
+        q.alternativas.length === b[i].alternativas.length &&
+        q.alternativas.every((alt, j) => alt === b[i].alternativas[j]),
+    )
+  )
 }

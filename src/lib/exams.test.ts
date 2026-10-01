@@ -8,11 +8,20 @@ import {
   linhaIdentificacao,
   listExams,
   normalizeParams,
+  normalizeQuestions,
+  questionsEqual,
+  removeQuestion,
   rememberedParams,
+  replaceQuestion,
+  setCorreta,
+  updateExam,
+  validateQuestions,
+  withQuestions,
   rotuloDificuldade,
   validateParams,
   type Exam,
   type ExamParams,
+  type Question,
 } from './exams'
 import type { Profile } from './profiles'
 
@@ -232,5 +241,121 @@ describe('linhaIdentificacao', () => {
 
   it('omite professora e ano letivo vazios', () => {
     expect(linhaIdentificacao(prova({ professora: '  ', anoLetivo: '' }))).toEqual(['Ciências', '7º ano'])
+  })
+})
+
+const questao = (over: Partial<Question> = {}): Question => ({
+  enunciado: 'Qual organela faz a respiração?',
+  alternativas: ['Ribossomo', 'Mitocôndria', 'Golgi', 'Lisossomo'],
+  correta: 1,
+  ...over,
+})
+
+function provaMinima(id: string, titulo = 'T'): Exam {
+  return { id, titulo, questoes: [questao()] } as unknown as Exam
+}
+
+describe('updateExam', () => {
+  it('troca só a prova de mesmo id, mantendo as outras e a ordem', () => {
+    const data = { version: 1 as const, provas: [provaMinima('a'), provaMinima('b'), provaMinima('c')] }
+    const r = updateExam(data, provaMinima('b', 'Novo'))
+    expect(r.provas.map((p) => [p.id, p.titulo])).toEqual([['a', 'T'], ['b', 'Novo'], ['c', 'T']])
+  })
+
+  it('id inexistente não altera a lista', () => {
+    const data = { version: 1 as const, provas: [provaMinima('a')] }
+    expect(updateExam(data, provaMinima('x')).provas).toEqual(data.provas)
+  })
+
+  it('tolera dado corrompido ou ausente', () => {
+    expect(updateExam(null as never, provaMinima('a'))).toEqual({ version: 1, provas: [] })
+    expect(updateExam({ version: 1, provas: 'lixo' } as never, provaMinima('a')).provas).toEqual([])
+  })
+})
+
+describe('validateQuestions', () => {
+  it('questão válida não gera erro', () => {
+    expect(validateQuestions([questao(), questao()])).toEqual({})
+  })
+
+  it('enunciado vazio ou só com espaços', () => {
+    const r = validateQuestions([questao(), questao({ enunciado: '   ' })])
+    expect(r[1]?.enunciado).toBe('Escreva o enunciado.')
+    expect(r[0]).toBeUndefined()
+  })
+
+  it('alternativa vazia é apontada pelo índice', () => {
+    const r = validateQuestions([questao({ alternativas: ['A', ' ', 'C', 'D'] })])
+    expect(r[0]?.alternativas?.[1]).toBe('Preencha esta alternativa.')
+    expect(r[0]?.alternativas?.[0]).toBeUndefined()
+  })
+
+  it('alternativas repetidas, ignorando caixa e espaços', () => {
+    const r = validateQuestions([questao({ alternativas: ['Golgi', 'golgi ', 'C', 'D'] })])
+    expect(r[0]?.repetidas).toBe('Há alternativas repetidas.')
+  })
+
+  it('gabarito fora do intervalo', () => {
+    expect(validateQuestions([questao({ correta: 4 })])[0]?.correta).toBe('Marque a alternativa correta.')
+    expect(validateQuestions([questao({ correta: -1 })])[0]?.correta).toBe('Marque a alternativa correta.')
+  })
+})
+
+describe('normalizeQuestions', () => {
+  it('faz trim no enunciado e nas alternativas', () => {
+    const [q] = normalizeQuestions([questao({ enunciado: '  Oi  ', alternativas: [' a ', 'b ', ' c', 'd'] })])
+    expect(q.enunciado).toBe('Oi')
+    expect(q.alternativas).toEqual(['a', 'b', 'c', 'd'])
+  })
+})
+
+describe('removeQuestion / replaceQuestion / setCorreta', () => {
+  const tres = [questao({ enunciado: 'Q1' }), questao({ enunciado: 'Q2' }), questao({ enunciado: 'Q3' })]
+
+  it('remove e as demais ficam na ordem (a numeração é a posição)', () => {
+    expect(removeQuestion(tres, 1).map((q) => q.enunciado)).toEqual(['Q1', 'Q3'])
+    expect(tres).toHaveLength(3)
+  })
+
+  it('recusa remover a última questão', () => {
+    const uma = [questao()]
+    expect(removeQuestion(uma, 0)).toBe(uma)
+  })
+
+  it('replaceQuestion troca só a posição indicada, sem mutar', () => {
+    const r = replaceQuestion(tres, 2, questao({ enunciado: 'Nova' }))
+    expect(r.map((q) => q.enunciado)).toEqual(['Q1', 'Q2', 'Nova'])
+    expect(tres[2].enunciado).toBe('Q3')
+  })
+
+  it('setCorreta muda só o gabarito daquela questão', () => {
+    const r = setCorreta(tres, 0, 3)
+    expect(r[0].correta).toBe(3)
+    expect(r[1].correta).toBe(1)
+    expect(tres[0].correta).toBe(1)
+  })
+})
+
+describe('questionsEqual', () => {
+  it('iguais por valor', () => {
+    expect(questionsEqual([questao()], [questao()])).toBe(true)
+  })
+
+  it('detecta mudança de texto, de gabarito e de quantidade', () => {
+    expect(questionsEqual([questao()], [questao({ enunciado: 'x' })])).toBe(false)
+    expect(questionsEqual([questao()], [questao({ alternativas: ['a', 'b', 'c', 'd'] })])).toBe(false)
+    expect(questionsEqual([questao()], [questao({ correta: 0 })])).toBe(false)
+    expect(questionsEqual([questao()], [questao(), questao()])).toBe(false)
+  })
+})
+
+describe('withQuestions', () => {
+  it('troca as questões e renova atualizadoEm, sem mexer em criadoEm', () => {
+    const original = { ...provaMinima('a'), criadoEm: '2026-01-01T00:00:00.000Z', atualizadoEm: '2026-01-01T00:00:00.000Z' }
+    const nova = withQuestions(original, [questao({ enunciado: 'Novo' })])
+    expect(nova.questoes[0].enunciado).toBe('Novo')
+    expect(nova.criadoEm).toBe(original.criadoEm)
+    expect(nova.atualizadoEm).not.toBe(original.atualizadoEm)
+    expect(original.questoes[0].enunciado).not.toBe('Novo')
   })
 })

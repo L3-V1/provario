@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ExamParams } from './exams'
-import { parseExamResponse } from './examResponse'
+import { parseExamResponse, parseQuestionResponse } from './examResponse'
 
 function params(over: Partial<ExamParams> = {}): ExamParams {
   return {
@@ -155,5 +155,60 @@ describe('parseExamResponse — rejeita', () => {
   it('MAX_TOKENS é um motivo distinto (resposta cortada)', () => {
     const r = motivo(corpo([q(), q()], { finishReason: 'MAX_TOKENS' }))
     expect(r.kind).toBe('truncated')
+  })
+})
+
+function corpoQuestao(questao: unknown, extra: Record<string, unknown> = {}) {
+  return {
+    candidates: [{ content: { parts: [{ text: JSON.stringify(questao) }] }, finishReason: 'STOP', ...extra }],
+  }
+}
+
+describe('parseQuestionResponse', () => {
+  it('aceita uma questão válida e converte a letra em índice', () => {
+    const r = parseQuestionResponse(corpoQuestao(q({ correta: 'C' })), 4)
+    expect(r).toEqual({
+      ok: true,
+      questao: { enunciado: 'Qual é a organela da respiração?', alternativas: ['Ribossomo', 'Mitocôndria', 'Golgi', 'Lisossomo'], correta: 2 },
+    })
+  })
+
+  it('remove prefixos "a) " e "1. "', () => {
+    const r = parseQuestionResponse(
+      corpoQuestao(q({ enunciado: '1. Pergunta?', alternativas: ['a) Um', 'b) Dois', 'c) Três', 'd) Quatro'] })),
+      4,
+    )
+    expect(r.ok && r.questao.enunciado).toBe('Pergunta?')
+    expect(r.ok && r.questao.alternativas).toEqual(['Um', 'Dois', 'Três', 'Quatro'])
+  })
+
+  it.each([
+    ['sem enunciado', q({ enunciado: '' }), 'sem enunciado'],
+    ['alternativas a menos', q({ alternativas: ['A', 'B'] }), 'não tem 4 alternativas'],
+    ['alternativa vazia', q({ alternativas: ['A', '', 'C', 'D'] }), 'alternativa vazia'],
+    ['alternativas repetidas', q({ alternativas: ['A', 'a', 'C', 'D'] }), 'alternativas repetidas'],
+    ['gabarito inválido', q({ correta: 'E' }), 'sem gabarito válido'],
+  ])('rejeita %s como format', (_nome, questao, trecho) => {
+    const r = parseQuestionResponse(corpoQuestao(questao), 4)
+    expect(r).toMatchObject({ ok: false, kind: 'format' })
+    expect(!r.ok && r.motivo).toContain(trecho)
+  })
+
+  it('usa o nº de alternativas informado (5)', () => {
+    const cinco = q({ alternativas: ['A', 'B', 'C', 'D', 'E'], correta: 'E' })
+    expect(parseQuestionResponse(corpoQuestao(cinco), 5)).toMatchObject({ ok: true })
+    expect(parseQuestionResponse(corpoQuestao(cinco), 4)).toMatchObject({ ok: false, kind: 'format' })
+  })
+
+  it('bloqueio, truncamento, vazio e JSON inválido', () => {
+    expect(parseQuestionResponse(corpoQuestao(q(), { finishReason: 'SAFETY' }), 4)).toMatchObject({ kind: 'blocked' })
+    expect(parseQuestionResponse({ promptFeedback: { blockReason: 'OTHER' } }, 4)).toMatchObject({ kind: 'blocked' })
+    expect(parseQuestionResponse(corpoQuestao(q(), { finishReason: 'MAX_TOKENS' }), 4)).toMatchObject({ kind: 'truncated' })
+    expect(parseQuestionResponse({}, 4)).toMatchObject({ kind: 'format' })
+    expect(parseQuestionResponse({ candidates: [{ content: { parts: [{ text: '{nao' }] } }] }, 4)).toMatchObject({ kind: 'format' })
+  })
+
+  it('rejeita lista no lugar de objeto', () => {
+    expect(parseQuestionResponse(corpoQuestao([q()]), 4)).toMatchObject({ ok: false, kind: 'format' })
   })
 })

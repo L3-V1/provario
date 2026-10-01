@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { ExamParams } from './exams'
-import { buildExamPrompt, examResponseSchema, letras } from './examPrompt'
+import type { Question } from './exams'
+import { buildExamPrompt, buildQuestionPrompt, examResponseSchema, letras, questionResponseSchema } from './examPrompt'
 
 function params(over: Partial<ExamParams> = {}): ExamParams {
   return {
@@ -82,5 +83,65 @@ describe('examResponseSchema', () => {
 describe('letras', () => {
   it('devolve as n primeiras letras maiúsculas', () => {
     expect(letras(5)).toEqual(['A', 'B', 'C', 'D', 'E'])
+  })
+})
+
+const questao = (enunciado: string, n = 4): Question => ({
+  enunciado,
+  alternativas: Array.from({ length: n }, (_, i) => `Opção ${i}`),
+  correta: 0,
+})
+
+describe('buildQuestionPrompt', () => {
+  const outras = [questao('Enunciado da outra A'), questao('Enunciado da outra B')]
+  const atual = questao('Enunciado da questão atual', 5)
+
+  it('pede uma única questão, com o nº de alternativas da questão atual', () => {
+    const p = buildQuestionPrompt(params({ alternativas: 4 }), outras, atual)
+    expect(p).toContain('exatamente 1 questão')
+    expect(p).toContain('exatamente 5 alternativas')
+    expect(p).not.toContain('exatamente 4 alternativas')
+  })
+
+  it('manda não repetir nem reformular as outras e a atual', () => {
+    const p = buildQuestionPrompt(params(), outras, atual)
+    expect(p).toMatch(/não repita/i)
+    expect(p).toContain('Enunciado da outra A')
+    expect(p).toContain('Enunciado da outra B')
+    expect(p).toContain('Enunciado da questão atual')
+  })
+
+  it('preserva conteúdo, série, dificuldade e observações', () => {
+    const p = buildQuestionPrompt(params({ dificuldade: 'dificil', observacoes: 'Use exemplos de Santos' }), outras, atual)
+    expect(p).toContain('Organelas celulares')
+    expect(p).toContain('7º ano')
+    expect(p).toContain('difícil')
+    expect(p).toContain('Use exemplos de Santos')
+  })
+
+  it('omite observações vazias e funciona sem outras questões', () => {
+    const p = buildQuestionPrompt(params({ observacoes: '  ' }), [], atual)
+    expect(p).not.toContain('Observações adicionais')
+  })
+
+  it('reaproveita as regras pedagógicas da prova', () => {
+    const regra = '- Não use "todas as anteriores", "nenhuma das anteriores" nem combinações como "a e b estão corretas".'
+    expect(buildExamPrompt(params())).toContain(regra)
+    expect(buildQuestionPrompt(params(), outras, atual)).toContain(regra)
+  })
+})
+
+describe('questionResponseSchema', () => {
+  it('descreve um objeto de questão com a correta como letra', () => {
+    const s = questionResponseSchema(5)
+    expect(s.type).toBe('OBJECT')
+    expect(s.required).toEqual(['enunciado', 'alternativas', 'correta'])
+    expect(s.properties.alternativas).toMatchObject({ minItems: 5, maxItems: 5 })
+    expect(s.properties.correta.enum).toEqual(['A', 'B', 'C', 'D', 'E'])
+  })
+
+  it('é o mesmo formato de cada item do schema da prova', () => {
+    const item = examResponseSchema(params({ alternativas: 4 })).properties.questoes.items
+    expect(questionResponseSchema(4)).toEqual(item)
   })
 })

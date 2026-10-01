@@ -1,24 +1,79 @@
-import { useEffect } from 'react'
-import { Link, useLocation, useParams } from 'react-router'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useBlocker, useLocation, useParams } from 'react-router'
 import Aviso from '../components/Aviso'
+import ConfirmDialog from '../components/ConfirmDialog'
+import EditorProva from '../components/EditorProva'
 import FolhaProva from '../components/FolhaProva'
 import Icone from '../components/Icone'
+import { idAlternativa, idCorreta, idEnunciado } from '../components/idsEditor'
 import {
   DEFAULT_EXAMS,
   EXAMS_KEY,
   listExams,
+  normalizeQuestions,
+  questionsEqual,
+  removeQuestion,
+  replaceQuestion,
   rotuloDificuldade,
+  updateExam,
+  validateQuestions,
+  withQuestions,
   type ExamsData,
+  type Question,
+  type QuestionErrors,
 } from '../lib/exams'
+import { regenerateQuestion } from '../lib/gemini'
+import { DEFAULT_SETTINGS, SETTINGS_KEY, type Settings } from '../lib/settings'
+import { readItem, StorageQuotaError, writeItem } from '../lib/storage'
 import { useStoredState } from '../lib/useStoredState'
+
+const MSG_ARMAZENAMENTO_CHEIO =
+  'Não foi possível salvar as alterações: o armazenamento do navegador está cheio. Libere espaço excluindo perfis ou provas antigas e tente de novo.'
+
+/** Id do primeiro campo com erro, na ordem em que aparecem na tela. */
+function primeiroCampoComErro(erros: QuestionErrors): string | null {
+  const i = Math.min(...Object.keys(erros).map(Number))
+  const e = erros[i]
+  if (!e) return null
+  if (e.enunciado) return idEnunciado(i)
+  const j = e.alternativas?.findIndex(Boolean) ?? -1
+  if (j >= 0) return idAlternativa(i, j)
+  if (e.repetidas) return idAlternativa(i, 0)
+  return idCorreta(i)
+}
 
 export default function Prova() {
   const { id } = useParams()
   const [data] = useStoredState<ExamsData>(EXAMS_KEY, DEFAULT_EXAMS)
+  const [settings] = useStoredState<Settings>(SETTINGS_KEY, DEFAULT_SETTINGS)
   const location = useLocation()
   const aviso = (location.state as { aviso?: string } | null)?.aviso
   const prova = listExams(data).find((p) => p.id === id)
   const titulo = prova?.titulo
+  const chave = settings.geminiApiKey.trim()
+
+  // Rascunho: editar, excluir e regerar mexem só aqui; "Salvar alterações" grava tudo de uma vez.
+  const [rascunho, setRascunho] = useState<Question[] | null>(null)
+  const [erros, setErros] = useState<QuestionErrors>({})
+  const [erroSalvar, setErroSalvar] = useState<string | null>(null)
+  const [salvo, setSalvo] = useState(false)
+  const [regerando, setRegerando] = useState<number | null>(null)
+  const [erroRegerar, setErroRegerar] = useState<string | null>(null)
+  const [regerada, setRegerada] = useState<{ indice: number; anterior: Question } | null>(null)
+  const [excluindo, setExcluindo] = useState<number | null>(null)
+  const [descartando, setDescartando] = useState(false)
+
+  const montado = useRef(true)
+  useEffect(() => {
+    montado.current = true
+    return () => {
+      montado.current = false
+    }
+  }, [])
+
+  const editando = rascunho !== null
+  const pendente = editando && !!prova && !questionsEqual(rascunho, prova.questoes)
+  const bloqueio = useBlocker(pendente)
 
   // O nome do arquivo ao "Salvar como PDF" vem do título do documento.
   useEffect(() => {
@@ -41,6 +96,93 @@ export default function Prova() {
   }
 
   const { params, perfil } = prova
+
+  function editar() {
+    setRascunho(prova!.questoes)
+    setErros({})
+    setErroSalvar(null)
+    setSalvo(false)
+    setErroRegerar(null)
+    setRegerada(null)
+  }
+
+  function sairDaEdicao() {
+    setRascunho(null)
+    setErros({})
+    setErroSalvar(null)
+    setErroRegerar(null)
+    setRegerada(null)
+    setDescartando(false)
+  }
+
+  function salvar() {
+    if (!rascunho || regerando !== null) return
+    const questoes = normalizeQuestions(rascunho)
+    const encontrados = validateQuestions(questoes)
+    setErros(encontrados)
+    setErroSalvar(null)
+    if (Object.keys(encontrados).length > 0) {
+      const campo = primeiroCampoComErro(encontrados)
+      if (campo) document.getElementById(campo)?.focus()
+      return
+    }
+    try {
+      const atual = readItem(EXAMS_KEY, DEFAULT_EXAMS)
+      writeItem<ExamsData>(
+        EXAMS_KEY,
+        updateExam(atual, withQuestions(prova!, questoes)),
+      )
+    } catch (err) {
+      if (!(err instanceof StorageQuotaError)) throw err
+      setErroSalvar(MSG_ARMAZENAMENTO_CHEIO)
+      return
+    }
+    sairDaEdicao()
+    setSalvo(true)
+  }
+
+  function alterar(i: number, questao: Question) {
+    setRascunho((r) => (r ? replaceQuestion(r, i, questao) : r))
+    setErros((e) => {
+      if (!(i in e)) return e
+      const { [i]: _, ...resto } = e
+      return resto
+    })
+  }
+
+  function excluir(i: number) {
+    setRascunho((r) => (r ? removeQuestion(r, i) : r))
+    setErros({})
+    setRegerada(null)
+    setExcluindo(null)
+  }
+
+  async function regerar(i: number) {
+    if (!rascunho || regerando !== null) return
+    const anterior = rascunho[i]
+    setErroRegerar(null)
+    setRegerada(null)
+    setRegerando(i)
+    const r = await regenerateQuestion(chave, prova!.params, rascunho.filter((_, j) => j !== i), anterior)
+    if (!montado.current) return
+    setRegerando(null)
+    if (!r.ok) {
+      setErroRegerar(r.message)
+      return
+    }
+    setRascunho((atual) => (atual ? replaceQuestion(atual, i, r.questao) : atual))
+    setErros((e) => {
+      const { [i]: _, ...resto } = e
+      return resto
+    })
+    setRegerada({ indice: i, anterior })
+  }
+
+  function desfazer() {
+    if (!regerada) return
+    setRascunho((atual) => (atual ? replaceQuestion(atual, regerada.indice, regerada.anterior) : atual))
+    setRegerada(null)
+  }
   const detalhes = [
     ['Escola', perfil.escola],
     ['Professora', perfil.professora],
@@ -69,10 +211,41 @@ export default function Prova() {
         </div>
 
         {aviso && <Aviso tipo="sucesso">{aviso}</Aviso>}
+        {salvo && <Aviso tipo="sucesso">Alterações salvas.</Aviso>}
 
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-3">
-            <button type="button" className="btn btn-primario" onClick={() => window.print()}>
+            {editando ? (
+              <>
+                <button
+                  type="button"
+                  className="btn btn-primario"
+                  disabled={regerando !== null}
+                  onClick={salvar}
+                >
+                  <Icone nome="salvar" />
+                  Salvar alterações
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secundario"
+                  disabled={regerando !== null}
+                  onClick={() => (pendente ? setDescartando(true) : sairDaEdicao())}
+                >
+                  Descartar
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="btn btn-secundario"
+                onClick={editar}
+              >
+                <Icone nome="lapis" />
+                Editar prova
+              </button>
+            )}
+            <button type="button" className="btn btn-primario" disabled={editando} onClick={() => window.print()}>
               <Icone nome="impressora" />
               Imprimir / Salvar PDF
             </button>
@@ -81,13 +254,84 @@ export default function Prova() {
               Gerar outra prova
             </Link>
           </div>
-          <p className="text-tinta-suave">
-            Na janela de impressão, escolha 'Salvar como PDF' como destino e desmarque 'Cabeçalhos e rodapés'.
-          </p>
+          {editando ? (
+            <p className="text-tinta-suave">
+              Salve as alterações para imprimir. Elas só valem na prova depois de salvas.
+            </p>
+          ) : (
+            <p className="text-tinta-suave">
+              Na janela de impressão, escolha 'Salvar como PDF' como destino e desmarque 'Cabeçalhos e rodapés'.
+            </p>
+          )}
         </div>
+
+        {editando && !chave && (
+          <Aviso tipo="atencao">
+            Para regerar questões, configure a chave do Gemini.{' '}
+            <Link to="/configuracoes" className="link">
+              Ir para Configurações
+            </Link>
+          </Aviso>
+        )}
+        {erroSalvar && <Aviso tipo="erro">{erroSalvar}</Aviso>}
+        {erroRegerar && <Aviso tipo="erro">{erroRegerar}</Aviso>}
+        {regerando !== null && (
+          <p role="status" className="font-semibold">
+            Regerando…
+          </p>
+        )}
+        {regerada && (
+          <Aviso tipo="sucesso">
+            <span className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              Questão {regerada.indice + 1} regerada.
+              <button type="button" className="link" onClick={desfazer}>
+                Desfazer
+              </button>
+            </span>
+          </Aviso>
+        )}
       </div>
 
-      <FolhaProva prova={prova} />
+      {rascunho ? (
+        <div className="print:hidden">
+          <EditorProva
+            questoes={rascunho}
+            erros={erros}
+            regerando={regerando}
+            podeRegerar={!!chave}
+            onChange={alterar}
+            onExcluir={setExcluindo}
+            onRegerar={regerar}
+          />
+        </div>
+      ) : (
+        <FolhaProva prova={prova} />
+      )}
+
+      <ConfirmDialog
+        aberto={excluindo !== null}
+        titulo="Excluir questão?"
+        mensagem={`A questão ${(excluindo ?? 0) + 1} será removida e as seguintes serão renumeradas. Isso só vale na prova depois de salvar.`}
+        rotuloConfirmar="Excluir questão"
+        onConfirmar={() => excluindo !== null && excluir(excluindo)}
+        onCancelar={() => setExcluindo(null)}
+      />
+      <ConfirmDialog
+        aberto={descartando}
+        titulo="Descartar alterações?"
+        mensagem="As alterações feitas nesta edição, inclusive questões regeradas, serão perdidas."
+        rotuloConfirmar="Descartar alterações"
+        onConfirmar={sairDaEdicao}
+        onCancelar={() => setDescartando(false)}
+      />
+      <ConfirmDialog
+        aberto={bloqueio.state === 'blocked'}
+        titulo="Sair sem salvar?"
+        mensagem="Você tem alterações que ainda não foram salvas. Se sair agora, elas serão perdidas."
+        rotuloConfirmar="Sair sem salvar"
+        onConfirmar={() => bloqueio.state === 'blocked' && bloqueio.proceed()}
+        onCancelar={() => bloqueio.state === 'blocked' && bloqueio.reset()}
+      />
     </div>
   )
 }

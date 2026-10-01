@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { ExamParams } from './exams'
-import { GEMINI_FALLBACK_MODEL, GEMINI_MODEL, RETRY_DELAY_MS, generateExam, testConnection } from './gemini'
+import type { ExamParams, Question } from './exams'
+import { GEMINI_FALLBACK_MODEL, GEMINI_MODEL, RETRY_DELAY_MS, generateExam, regenerateQuestion, testConnection } from './gemini'
 
 function mockFetch(impl: typeof fetch) {
   const fn = vi.fn(impl)
@@ -283,5 +283,134 @@ describe('generateExam', () => {
     const p = generateExam('k', params)
     await vi.advanceTimersByTimeAsync(RETRY_DELAY_MS * 2 + 100)
     expect(await p).toMatchObject({ ok: true, modelo: GEMINI_FALLBACK_MODEL })
+  })
+})
+
+describe('regenerateQuestion', () => {
+  const params: ExamParams = {
+    perfilId: 'p1',
+    disciplina: 'Ciências',
+    serie: '7º ano',
+    turmas: '',
+    conteudo: 'Células',
+    quantidade: 3,
+    alternativas: 4,
+    dificuldade: 'media',
+    titulo: '',
+    observacoes: '',
+  }
+  const outras: Question[] = [
+    { enunciado: 'Primeira pergunta?', alternativas: ['a1', 'a2', 'a3', 'a4'], correta: 0 },
+    { enunciado: 'Segunda pergunta?', alternativas: ['b1', 'b2', 'b3', 'b4'], correta: 1 },
+  ]
+  const atual: Question = { enunciado: 'Pergunta atual?', alternativas: ['c1', 'c2', 'c3', 'c4'], correta: 2 }
+
+  const resposta = (q: unknown, extra: Record<string, unknown> = {}) =>
+    jsonResponse(200, { candidates: [{ content: { parts: [{ text: JSON.stringify(q) }] }, ...extra }] })
+  const nova = (enunciado = 'Pergunta nova?', correta = 'D') => ({
+    enunciado,
+    alternativas: ['n1', 'n2', 'n3', 'n4'],
+    correta,
+  })
+
+  it('sem chave não chama a rede e devolve missing-key', async () => {
+    const fn = mockFetch(async () => resposta(nova()))
+    expect(await regenerateQuestion(' ', params, outras, atual)).toMatchObject({ ok: false, kind: 'missing-key' })
+    expect(fn).not.toHaveBeenCalled()
+  })
+
+  it('sucesso: devolve a questão com a letra convertida e o modelo', async () => {
+    mockFetch(async () => resposta(nova()))
+    const r = await regenerateQuestion('k', params, outras, atual)
+    expect(r).toEqual({
+      ok: true,
+      modelo: GEMINI_MODEL,
+      questao: { enunciado: 'Pergunta nova?', alternativas: ['n1', 'n2', 'n3', 'n4'], correta: 3 },
+    })
+  })
+
+  it('envia prompt com as outras e a atual, e schema de uma questão', async () => {
+    const fn = mockFetch(async () => resposta(nova()))
+    await regenerateQuestion('segredo123', params, outras, atual)
+    const [url, init] = fn.mock.calls[0]
+    expect(String(url)).not.toContain('segredo123')
+    expect((init!.headers as Record<string, string>)['x-goog-api-key']).toBe('segredo123')
+    const corpo = JSON.parse(init!.body as string)
+    const prompt = corpo.contents[0].parts[0].text as string
+    for (const e of ['Primeira pergunta?', 'Segunda pergunta?', 'Pergunta atual?']) expect(prompt).toContain(e)
+    expect(corpo.generationConfig.responseMimeType).toBe('application/json')
+    expect(corpo.generationConfig.responseSchema.properties.correta.enum).toEqual(['A', 'B', 'C', 'D'])
+  })
+
+  it('usa o nº de alternativas da questão atual, não o dos parâmetros', async () => {
+    const cinco: Question = { ...atual, alternativas: ['1', '2', '3', '4', '5'] }
+    mockFetch(async () => resposta({ ...nova(), alternativas: ['n1', 'n2', 'n3', 'n4', 'n5'], correta: 'E' }))
+    const r = await regenerateQuestion('k', params, outras, cinco)
+    expect(r.ok && r.questao.alternativas).toHaveLength(5)
+  })
+
+  it('formato inválido e depois válido → ok em 2 chamadas', async () => {
+    let n = 0
+    const fn = mockFetch(async () => (n++ === 0 ? resposta({ enunciado: '' }) : resposta(nova())))
+    expect(await regenerateQuestion('k', params, outras, atual)).toMatchObject({ ok: true })
+    expect(fn).toHaveBeenCalledTimes(2)
+  })
+
+  it('formato inválido duas vezes → invalid-response', async () => {
+    const fn = mockFetch(async () => resposta({ enunciado: '' }))
+    const r = await regenerateQuestion('k', params, outras, atual)
+    expect(r).toMatchObject({ ok: false, kind: 'invalid-response' })
+    expect(fn).toHaveBeenCalledTimes(2)
+  })
+
+  it('enunciado igual ao de outra questão (ignorando caixa) conta como formato e tenta de novo', async () => {
+    let n = 0
+    const fn = mockFetch(async () =>
+      resposta(n++ === 0 ? nova('  PRIMEIRA pergunta?') : nova('Outra pergunta totalmente nova?')),
+    )
+    const r = await regenerateQuestion('k', params, outras, atual)
+    expect(r.ok && r.questao.enunciado).toBe('Outra pergunta totalmente nova?')
+    expect(fn).toHaveBeenCalledTimes(2)
+  })
+
+  it('duplicata persistente → invalid-response', async () => {
+    mockFetch(async () => resposta(nova('Segunda pergunta?')))
+    expect(await regenerateQuestion('k', params, outras, atual)).toMatchObject({ ok: false, kind: 'invalid-response' })
+  })
+
+  it('bloqueio → blocked, sem nova tentativa', async () => {
+    const fn = mockFetch(async () => jsonResponse(200, { promptFeedback: { blockReason: 'SAFETY' } }))
+    expect(await regenerateQuestion('k', params, outras, atual)).toMatchObject({ ok: false, kind: 'blocked' })
+    expect(fn).toHaveBeenCalledTimes(1)
+  })
+
+  it('429 → rate-limit, sem nova tentativa', async () => {
+    const fn = mockFetch(async () => jsonResponse(429, { error: {} }))
+    expect(await regenerateQuestion('k', params, outras, atual)).toMatchObject({ ok: false, kind: 'rate-limit' })
+    expect(fn).toHaveBeenCalledTimes(1)
+  })
+
+  it('falha de rede', async () => {
+    mockFetch(async () => {
+      throw new TypeError('Failed to fetch')
+    })
+    expect(await regenerateQuestion('k', params, outras, atual)).toMatchObject({ ok: false, kind: 'network' })
+  })
+
+  it('timeout só depois de 90 s', async () => {
+    vi.useFakeTimers()
+    mockFetch(
+      (_url, init) =>
+        new Promise((_, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')))
+        }),
+    )
+    let resultado: unknown = null
+    const p = regenerateQuestion('k', params, outras, atual).then((r) => (resultado = r))
+    await vi.advanceTimersByTimeAsync(46_000)
+    expect(resultado).toBeNull()
+    await vi.advanceTimersByTimeAsync(45_000)
+    await p
+    expect(resultado).toMatchObject({ ok: false, kind: 'timeout' })
   })
 })

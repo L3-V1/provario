@@ -115,7 +115,7 @@ Uma professora de Ciências do Ensino Fundamental II da rede pública de Santos 
 **Pendências:** visual final do cabeçalho, que pode seguir um modelo de prova que a professora já usa
 
 ## Fase 5 — Revisão e edição de questões
-**Status:** pendente
+**Status:** concluída
 **Objetivo:** Permitir que a professora corrija e ajuste a prova gerada antes de imprimir.
 **Entregas:**
 - Edição do enunciado e das alternativas de cada questão
