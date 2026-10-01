@@ -1,5 +1,6 @@
 import { Link } from 'react-router'
 import Aviso from '../components/Aviso'
+import QuestaoView from '../components/QuestaoView'
 import { DEFAULT_SETTINGS, SETTINGS_KEY, type Settings } from '../lib/settings'
 import { useStoredState } from '../lib/useStoredState'
 
@@ -26,7 +27,12 @@ export default function Inicio() {
       </div>
 
       {settings.geminiApiKey ? (
-        <Aviso tipo="sucesso">A chave do Gemini está configurada. Tudo pronto para gerar provas.</Aviso>
+        <Aviso tipo="sucesso">
+          A chave do Gemini está configurada. Tudo pronto para gerar provas.{' '}
+          <Link to="/provas/nova" className="link">
+            Gerar uma prova
+          </Link>
+        </Aviso>
       ) : (
         <Aviso tipo="atencao">
           Você ainda não configurou a chave do Gemini.{' '}
@@ -45,20 +51,11 @@ export default function Inicio() {
             <Linha rotulo="Nota" curta />
           </div>
           <div className="px-3 py-4 sm:px-5">
-            <p className="font-semibold">
-              1. Qual organela celular é responsável pela respiração celular e pela produção da
-              maior parte da energia da célula?
-            </p>
-            <ol className="mt-3 space-y-1.5">
-              {alternativas.map((alt, i) => (
-                <li key={alt} className="flex gap-3">
-                  <span className="grid size-7 shrink-0 place-items-center border-2 border-tinta font-display text-sm font-bold">
-                    {String.fromCharCode(97 + i)}
-                  </span>
-                  <span className="pt-0.5">{alt}</span>
-                </li>
-              ))}
-            </ol>
+            <QuestaoView
+              numero={1}
+              enunciado="Qual organela celular é responsável pela respiração celular e pela produção da maior parte da energia da célula?"
+              alternativas={alternativas}
+            />
           </div>
         </div>
         <figcaption className="text-sm text-tinta-suave">

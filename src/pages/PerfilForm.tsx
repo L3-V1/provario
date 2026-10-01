@@ -2,6 +2,7 @@ import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import Aviso from '../components/Aviso'
 import CabecalhoPerfil from '../components/CabecalhoPerfil'
+import CampoTexto from '../components/CampoTexto'
 import Icone from '../components/Icone'
 import { LogoError, processLogo } from '../lib/logo'
 import {
@@ -22,45 +23,6 @@ import { useStoredState } from '../lib/useStoredState'
 function toDraft(p: Profile): ProfileDraft {
   const { id, nome, escola, secretaria, logo, professora, anoLetivo } = p
   return { id, nome, escola, secretaria, logo, professora, anoLetivo }
-}
-
-function CampoTexto({
-  id,
-  rotulo,
-  obrigatorio = false,
-  valor,
-  erro,
-  onChange,
-}: {
-  id: string
-  rotulo: string
-  obrigatorio?: boolean
-  valor: string
-  erro?: string
-  onChange: (valor: string) => void
-}) {
-  return (
-    <div className="space-y-1.5">
-      <label htmlFor={id} className="block font-bold">
-        {rotulo}
-        {obrigatorio && <span className="font-normal text-tinta-suave"> (obrigatório)</span>}
-      </label>
-      <input
-        id={id}
-        value={valor}
-        autoComplete="off"
-        aria-invalid={erro ? true : undefined}
-        aria-describedby={erro ? `${id}-erro` : undefined}
-        onChange={(e) => onChange(e.target.value)}
-        className="campo"
-      />
-      {erro && (
-        <p id={`${id}-erro`} className="font-semibold text-caneta-escura">
-          {erro}
-        </p>
-      )}
-    </div>
-  )
 }
 
 function Formulario({ inicial }: { inicial: ProfileDraft }) {

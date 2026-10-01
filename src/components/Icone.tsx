@@ -63,6 +63,11 @@ const paths = {
       <path d="M8 7.5h2v2H8Z" />
     </>
   ),
+  faisca: (
+    <>
+      <path d="M12 2.5 14 10l7.5 2-7.5 2-2 7.5L10 14l-7.5-2L10 10Z" />
+    </>
+  ),
 } as const
 
 export type NomeIcone = keyof typeof paths

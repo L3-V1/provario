@@ -1,15 +1,18 @@
-import { NavLink, Outlet } from "react-router";
+import { Link, Outlet, useLocation } from "react-router";
 import brasao from "../images/brasao-cor-vertical.png";
 import logoPms from "../images/logo-pms-bco.png";
 
 // Cada seção do app é uma divisória do fichário; a ativa se emenda à folha e leva o grifo de marca-texto.
-const abas = [
+// `secao` é o prefixo cujas rotas também acendem a aba (ex.: /provas/:id acende "Nova prova").
+const abas: { to: string; label: string; secao?: string }[] = [
   { to: "/", label: "Início" },
+  { to: "/provas/nova", label: "Nova prova", secao: "/provas" },
   { to: "/perfis", label: "Perfis" },
   { to: "/configuracoes", label: "Configurações" },
 ];
 
 export default function Layout() {
+  const { pathname } = useLocation();
   return (
     <div className="min-h-dvh px-3 py-4 sm:px-6 sm:py-8">
       <a
@@ -24,24 +27,29 @@ export default function Layout() {
           aria-label="Principal"
           className="order-first -mb-0.5 flex gap-1.5 overflow-x-auto pl-8 sm:pl-10 md:order-last md:mb-0 md:-ml-0.5 md:flex-col md:gap-2 md:overflow-visible md:pt-36 md:pl-0"
         >
-          {abas.map((a) => (
-            <NavLink
-              key={a.to}
-              to={a.to}
-              end={a.to === "/"}
-              className={({ isActive }) =>
-                [
+          {abas.map((a) => {
+            const base = a.secao ?? a.to;
+            const ativa =
+              a.to === "/"
+                ? pathname === "/"
+                : pathname === base || pathname.startsWith(`${base}/`);
+            return (
+              <Link
+                key={a.to}
+                to={a.to}
+                aria-current={ativa ? "page" : undefined}
+                className={[
                   "relative border-2 border-tinta px-4 py-2.5 font-display font-bold whitespace-nowrap",
                   "border-b-0 md:border-b-2 md:border-l-0 md:py-3 md:pr-5",
-                  isActive
+                  ativa
                     ? "aba-ativa z-10 bg-folha text-tinta"
                     : "bg-aba-inativa text-tinta-suave hover:text-tinta hover:underline hover:decoration-2 hover:underline-offset-4",
-                ].join(" ")
-              }
-            >
-              <span>{a.label}</span>
-            </NavLink>
-          ))}
+                ].join(" ")}
+              >
+                <span>{a.label}</span>
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="folha relative min-w-0 flex-1">

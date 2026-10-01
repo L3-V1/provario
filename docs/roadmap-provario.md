@@ -83,7 +83,7 @@ Uma professora de Ciências do Ensino Fundamental II da rede pública de Santos 
 - A exclusão pede confirmação
 
 ## Fase 3 — Geração da prova
-**Status:** pendente
+**Status:** concluída
 **Objetivo:** Gerar as questões e o gabarito com o Gemini a partir dos parâmetros da professora.
 **Entregas:**
 - Formulário de parâmetros: perfil, disciplina (padrão Ciências), ano/série (6º ao 9º) e turma(s), conteúdo, quantidade de questões (1 a 20), alternativas (4 ou 5), dificuldade, título e observações extras
