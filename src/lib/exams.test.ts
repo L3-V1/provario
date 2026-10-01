@@ -4,9 +4,12 @@ import {
   addExam,
   defaultTitle,
   initialParams,
+  letraAlternativa,
+  linhaIdentificacao,
   listExams,
   normalizeParams,
   rememberedParams,
+  rotuloDificuldade,
   validateParams,
   type Exam,
   type ExamParams,
@@ -185,5 +188,49 @@ describe('listExams / addExam', () => {
 
   it('addExam sobre dado corrompido recomeça a lista', () => {
     expect(addExam(null as never, exam).provas).toEqual([exam])
+  })
+})
+
+describe('letraAlternativa', () => {
+  it('devolve a–e para os índices 0 a 4', () => {
+    expect([0, 1, 2, 3, 4].map(letraAlternativa)).toEqual(['a', 'b', 'c', 'd', 'e'])
+  })
+})
+
+describe('rotuloDificuldade', () => {
+  it('devolve o rótulo de cada dificuldade', () => {
+    expect(rotuloDificuldade('facil')).toBe('Fácil')
+    expect(rotuloDificuldade('media')).toBe('Média')
+    expect(rotuloDificuldade('dificil')).toBe('Difícil')
+    expect(rotuloDificuldade('mista')).toBe('Mista')
+  })
+})
+
+describe('linhaIdentificacao', () => {
+  function prova(perfilOver: Partial<Profile>, paramsOver: Partial<ExamParams> = {}): Exam {
+    const { criadoEm: _c, atualizadoEm: _a, ...snapshot } = perfil(perfilOver)
+    return {
+      id: 'e1',
+      titulo: 'Prova',
+      params: params(paramsOver),
+      perfil: snapshot,
+      questoes: [],
+      modelo: 'm',
+      criadoEm: '2026-01-01T10:00:00.000Z',
+      atualizadoEm: '2026-01-01T10:00:00.000Z',
+    }
+  }
+
+  it('monta professora, disciplina, série e ano letivo, nessa ordem', () => {
+    expect(linhaIdentificacao(prova({ professora: 'Ana' }))).toEqual([
+      'Professora: Ana',
+      'Ciências',
+      '7º ano',
+      '2026',
+    ])
+  })
+
+  it('omite professora e ano letivo vazios', () => {
+    expect(linhaIdentificacao(prova({ professora: '  ', anoLetivo: '' }))).toEqual(['Ciências', '7º ano'])
   })
 })

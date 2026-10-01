@@ -171,6 +171,27 @@
   }
 }
 
+/* Impressão: só a prova, sem fundo de fichário. */
+@page {
+  size: A4;
+  margin: 15mm 14mm;
+}
+
+@media print {
+  body {
+    background: #ffffff;
+    background-image: none;
+    font-size: 11.5pt;
+  }
+
+  .folha {
+    border: 0;
+    box-shadow: none;
+    background-image: none;
+    --margem-x: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

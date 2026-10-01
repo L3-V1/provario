@@ -1,0 +1,57 @@
+- generic [ref=e3]:
+  - link "Pular para o conteúdo" [ref=e4] [cursor=pointer]:
+    - /url: "#conteudo"
+  - generic [ref=e5]:
+    - navigation "Principal" [ref=e6]:
+      - link "Início" [ref=e7] [cursor=pointer]:
+        - /url: "#/"
+      - link "Nova prova" [ref=e8] [cursor=pointer]:
+        - /url: "#/provas/nova"
+      - link "Perfis" [ref=e9] [cursor=pointer]:
+        - /url: "#/perfis"
+      - link "Configurações" [ref=e10] [cursor=pointer]:
+        - /url: "#/configuracoes"
+    - generic [ref=e11]:
+      - generic [ref=e13]:
+        - banner [ref=e14]:
+          - generic [ref=e15]:
+            - paragraph [ref=e16]: Provario
+            - paragraph [ref=e17]: Provas objetivas de Ciências, prontas para imprimir.
+          - img "Prefeitura de Santos" [ref=e18]
+        - main [ref=e19]:
+          - generic [ref=e20]:
+            - generic [ref=e21]:
+              - heading "Bem-vinda, professora" [level=1] [ref=e22]
+              - paragraph [ref=e23]: Você escolhe o conteúdo, a turma e a quantidade de questões. A IA escreve a prova e o gabarito, você revisa e imprime.
+            - alert [ref=e24]:
+              - generic [ref=e28]:
+                - text: Você ainda não configurou a chave do Gemini.
+                - link "Ir para Configurações" [ref=e29] [cursor=pointer]:
+                  - /url: "#/configuracoes"
+            - figure "Exemplo de questão. Na prova de verdade, o cabeçalho traz os dados da sua escola e o gabarito sai numa página separada." [ref=e30]:
+              - generic [ref=e31]:
+                - generic [ref=e32]:
+                  - generic [ref=e33]: Prova de Ciências, 7º ano
+                  - generic [ref=e34]: "Aluno:"
+                  - generic [ref=e37]: "Nº:"
+                  - generic [ref=e40]: "Nota:"
+                - generic [ref=e44]:
+                  - paragraph [ref=e45]: 1. Qual organela celular é responsável pela respiração celular e pela produção da maior parte da energia da célula?
+                  - list [ref=e46]:
+                    - listitem [ref=e47]:
+                      - generic [ref=e48]: a
+                      - generic [ref=e49]: Ribossomo
+                    - listitem [ref=e50]:
+                      - generic [ref=e51]: b
+                      - generic [ref=e52]: Mitocôndria
+                    - listitem [ref=e53]:
+                      - generic [ref=e54]: c
+                      - generic [ref=e55]: Complexo golgiense
+                    - listitem [ref=e56]:
+                      - generic [ref=e57]: d
+                      - generic [ref=e58]: Membrana plasmática
+                    - listitem [ref=e59]:
+                      - generic [ref=e60]: e
+                      - generic [ref=e61]: Lisossomo
+        - contentinfo [ref=e63]: Tudo o que você salva fica neste navegador, sem conta e sem servidor.
+      - img "Prefeitura de Santos" [ref=e65]

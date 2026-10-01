@@ -68,6 +68,12 @@ const paths = {
       <path d="M12 2.5 14 10l7.5 2-7.5 2-2 7.5L10 14l-7.5-2L10 10Z" />
     </>
   ),
+  impressora: (
+    <>
+      <path d="M7 8V3h10v5M7 17H3V8h18v9h-4" />
+      <path d="M7 14h10v7H7Z" />
+    </>
+  ),
 } as const
 
 export type NomeIcone = keyof typeof paths

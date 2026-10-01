@@ -1,3 +1,5 @@
+import { letraAlternativa } from '../lib/exams'
+
 /** Enunciado numerado e alternativas com letras (a, b, c…). */
 export default function QuestaoView({
   numero,
@@ -17,7 +19,7 @@ export default function QuestaoView({
         {alternativas.map((alt, i) => (
           <li key={i} className="flex gap-3">
             <span className="grid size-7 shrink-0 place-items-center border-2 border-tinta font-display text-sm font-bold">
-              {String.fromCharCode(97 + i)}
+              {letraAlternativa(i)}
             </span>
             <span className="min-w-0 pt-0.5 wrap-break-word">{alt}</span>
           </li>

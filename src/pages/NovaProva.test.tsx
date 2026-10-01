@@ -138,7 +138,7 @@ describe('Nova prova — geração', () => {
     await userEvent.click(screen.getByRole('radio', { name: /5 alternativas/ }))
     await userEvent.click(botaoGerar())
 
-    await screen.findByRole('heading', { name: 'Avaliação de Ciências — 7º ano' })
+    await screen.findByRole('heading', { level: 1, name: 'Avaliação de Ciências — 7º ano' })
     expect(router.state.location.pathname).toMatch(/^\/provas\/[^/]+$/)
     expect(screen.getByRole('status')).toHaveTextContent('Prova gerada e salva.')
     expect(fn).toHaveBeenCalledTimes(1)
@@ -146,8 +146,8 @@ describe('Nova prova — geração', () => {
     for (let i = 1; i <= 5; i++) {
       expect(screen.getByText(`${i}. Pergunta ${i} sobre células?`)).toBeInTheDocument()
     }
-    expect(screen.getAllByText('e')).toHaveLength(5) // letra e) em cada questão
-    const gabarito = screen.getByRole('region', { name: 'Gabarito' })
+    expect(screen.getAllByText(/^e\) Opção/)).toHaveLength(5) // alternativa e) em cada questão
+    const gabarito = screen.getByRole('region', { name: /Gabarito/ })
     expect(within(gabarito).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
       '1 – a',
       '2 – b',
@@ -173,13 +173,13 @@ describe('Nova prova — geração', () => {
     await userEvent.type(qtd, '2')
     await preencherConteudo()
     await userEvent.click(botaoGerar())
-    await screen.findByRole('region', { name: 'Gabarito' })
+    await screen.findByRole('region', { name: /Gabarito/ })
     const caminho = router.state.location.pathname
 
     cleanup() // recarregar a página
     renderAt(caminho)
     expect(screen.getByText('1. Pergunta 1 sobre células?')).toBeInTheDocument()
-    expect(screen.getByRole('region', { name: 'Gabarito' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: /Gabarito/ })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Nova prova' })).toHaveAttribute('aria-current', 'page')
   })
 
@@ -192,13 +192,13 @@ describe('Nova prova — geração', () => {
     await userEvent.type(qtd, '1')
     await preencherConteudo()
     await userEvent.click(botaoGerar())
-    await screen.findByRole('region', { name: 'Gabarito' })
+    await screen.findByRole('region', { name: /Gabarito/ })
     const caminho = router.state.location.pathname
 
     cleanup()
     localStorage.removeItem('provario:profiles')
     renderAt(caminho)
-    expect(screen.getByText(/Escola Alfa/)).toBeInTheDocument()
+    expect(within(screen.getByRole('article', { name: 'Prova' })).getByText('Escola Alfa')).toBeInTheDocument()
   })
 
   it('Enquanto gera, o botão fica desabilitado com "Gerando…" e os campos travados', async () => {
@@ -218,7 +218,7 @@ describe('Nova prova — geração', () => {
     expect(screen.getByLabelText(/Conteúdo/)).toBeDisabled()
 
     liberar(respostaGemini(1, 4))
-    await screen.findByRole('region', { name: 'Gabarito' })
+    await screen.findByRole('region', { name: /Gabarito/ })
   })
 
   it('Quando a IA responde fora do formato duas vezes, mostra erro claro, mantém o formulário e não salva nada', async () => {
@@ -281,7 +281,7 @@ describe('Nova prova — geração', () => {
     await userEvent.type(screen.getByLabelText(/Título/), 'Prova 1')
     await userEvent.type(screen.getByLabelText(/Observações/), 'Use Santos')
     await userEvent.click(botaoGerar())
-    await screen.findByRole('region', { name: 'Gabarito' })
+    await screen.findByRole('region', { name: /Gabarito/ })
 
     cleanup()
     renderAt('/provas/nova')
@@ -305,7 +305,7 @@ describe('Nova prova — geração', () => {
     await userEvent.type(screen.getByLabelText(/Título/), 'Prova bimestral')
     await userEvent.type(screen.getByLabelText(/Observações/), 'Sem pegadinhas')
     await userEvent.click(botaoGerar())
-    await screen.findByRole('heading', { name: 'Prova bimestral' })
+    await screen.findByRole('heading', { level: 1, name: 'Prova bimestral' })
     const corpo = JSON.parse(fn.mock.calls[0][1]!.body as string)
     expect(corpo.contents[0].parts[0].text).toContain('Sem pegadinhas')
   })

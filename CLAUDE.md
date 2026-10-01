@@ -35,4 +35,4 @@ A push to `main` runs `.github/workflows/deploy.yml`, which lints, tests, builds
 
 ## Planning docs
 
-`docs/roadmap-provario.md` holds the product decisions, out-of-scope items and the six-phase roadmap with per-phase status. `docs/plans/fase-N-*.md` holds the detailed plan for each implemented phase, ending with an implementation report. Read the roadmap before starting a new phase. Printing is meant to use the browser's "Save as PDF" with print CSS, not a PDF library.
+`docs/roadmap-provario.md` holds the product decisions, out-of-scope items and the six-phase roadmap with per-phase status. `docs/plans/fase-N-*.md` holds the detailed plan for each implemented phase, ending with an implementation report. Read the roadmap before starting a new phase. Printing is meant to use the browser's "Save as PDF" with print CSS, not a PDF library. `FolhaProva` renders the A4 sheet from an `Exam`; app chrome is hidden in print with `print:hidden` (Layout, page action bar) and `@page`/`@media print` live in `src/index.css`.

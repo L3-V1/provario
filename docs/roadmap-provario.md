@@ -99,7 +99,7 @@ Uma professora de Ciências do Ensino Fundamental II da rede pública de Santos 
 **Pendências:** qual modelo do Gemini usar e o texto final do prompt
 
 ## Fase 4 — Pré-visualização e impressão
-**Status:** pendente
+**Status:** concluída
 **Objetivo:** Transformar a prova gerada num documento pronto para imprimir ou salvar em PDF.
 **Entregas:**
 - Pré-visualização em formato de folha, com o cabeçalho institucional (logo, escola, professora, disciplina, e as linhas Aluno, Nº, Turma, Data e Nota) e o título

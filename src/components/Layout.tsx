@@ -14,18 +14,18 @@ const abas: { to: string; label: string; secao?: string }[] = [
 export default function Layout() {
   const { pathname } = useLocation();
   return (
-    <div className="min-h-dvh px-3 py-4 sm:px-6 sm:py-8">
+    <div className="min-h-dvh px-3 py-4 sm:px-6 sm:py-8 print:min-h-0 print:p-0">
       <a
         href="#conteudo"
-        className="btn btn-secundario sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-2 focus-visible:left-2 focus-visible:z-50"
+        className="btn btn-secundario sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-2 focus-visible:left-2 focus-visible:z-50 print:hidden"
       >
         Pular para o conteúdo
       </a>
 
-      <div className="mx-auto flex max-w-5xl flex-col md:flex-row">
+      <div className="mx-auto flex max-w-5xl flex-col md:flex-row print:block print:max-w-none">
         <nav
           aria-label="Principal"
-          className="order-first -mb-0.5 flex gap-1.5 overflow-x-auto pl-8 sm:pl-10 md:order-last md:mb-0 md:-ml-0.5 md:flex-col md:gap-2 md:overflow-visible md:pt-36 md:pl-0"
+          className="order-first -mb-0.5 flex gap-1.5 overflow-x-auto pl-8 sm:pl-10 md:order-last md:mb-0 md:-ml-0.5 md:flex-col md:gap-2 md:overflow-visible md:pt-36 md:pl-0 print:hidden"
         >
           {abas.map((a) => {
             const base = a.secao ?? a.to;
@@ -52,14 +52,14 @@ export default function Layout() {
           })}
         </nav>
 
-        <div className="folha relative min-w-0 flex-1">
+        <div className="folha relative min-w-0 flex-1 print:block">
           <div
             aria-hidden="true"
-            className="furos absolute inset-y-0 left-0 w-7 sm:w-9"
+            className="furos absolute inset-y-0 left-0 w-7 sm:w-9 print:hidden"
           />
 
-          <div className="pr-3 pl-12 sm:pr-8 sm:pl-20">
-            <header className="flex items-end justify-between gap-4 border-b-4 border-double border-tinta pt-6 pb-4 sm:pt-8">
+          <div className="pr-3 pl-12 sm:pr-8 sm:pl-20 print:p-0">
+            <header className="flex items-end justify-between gap-4 border-b-4 border-double border-tinta pt-6 pb-4 sm:pt-8 print:hidden">
               <div>
                 <p
                   className="font-display text-4xl leading-none font-black text-santos sm:text-5xl"
@@ -81,18 +81,18 @@ export default function Layout() {
             <main
               id="conteudo"
               tabIndex={-1}
-              className="max-w-3xl py-8 outline-none sm:py-10"
+              className="max-w-3xl py-8 outline-none sm:py-10 print:max-w-none print:py-0"
             >
               <Outlet />
             </main>
 
-            <footer className="border-t-2 border-tinta py-4 text-sm text-tinta-suave">
+            <footer className="border-t-2 border-tinta py-4 text-sm text-tinta-suave print:hidden">
               Tudo o que você salva fica neste navegador, sem conta e sem
               servidor.
             </footer>
           </div>
 
-          <div className="flex items-center justify-end border-t-2 border-tinta bg-tinta px-3 py-3 sm:px-8">
+          <div className="flex items-center justify-end border-t-2 border-tinta bg-tinta px-3 py-3 sm:px-8 print:hidden">
             <img
               src={logoPms}
               alt="Prefeitura de Santos"

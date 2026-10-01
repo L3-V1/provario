@@ -138,3 +138,24 @@ export function normalizeParams(p: ExamParams): ExamParams {
     observacoes: p.observacoes.trim(),
   }
 }
+
+/** Letra de apresentação da alternativa: 0 → 'a', 1 → 'b'… */
+export function letraAlternativa(i: number): string {
+  return String.fromCharCode(97 + i)
+}
+
+export function rotuloDificuldade(d: Dificuldade): string {
+  return DIFICULDADES.find((x) => x.valor === d)?.rotulo ?? d
+}
+
+/** Itens não vazios da linha de identificação do cabeçalho: professora, disciplina, série e ano letivo. */
+export function linhaIdentificacao(prova: Exam): string[] {
+  const { perfil, params } = prova
+  const professora = perfil.professora.trim()
+  return [
+    professora ? `Professora: ${professora}` : '',
+    params.disciplina.trim(),
+    params.serie,
+    perfil.anoLetivo.trim(),
+  ].filter((item) => item !== '')
+}
