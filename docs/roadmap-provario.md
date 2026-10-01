@@ -69,7 +69,7 @@ Uma professora de Ciências do Ensino Fundamental II da rede pública de Santos 
 - "Testar conexão" retorna sucesso com uma chave válida e mostra uma mensagem clara com uma chave inválida
 
 ## Fase 2 — Perfis institucionais
-**Status:** pendente
+**Status:** concluída
 **Objetivo:** Permitir que a professora cadastre e mantenha os perfis das escolas onde dá aula.
 **Entregas:**
 - Lista de perfis com criar, editar e excluir

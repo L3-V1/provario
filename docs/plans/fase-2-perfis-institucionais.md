@@ -1,7 +1,7 @@
 ---
 titulo: Provario — Fase 2: Perfis institucionais
 data: 2026-09-30
-status: aprovado
+status: implementado
 ---
 
 # Plano — Provario, Fase 2: Perfis institucionais
@@ -98,3 +98,42 @@ Decisões tomadas com o usuário:
 - **Qualidade da logo na impressão:** 400 px equivale a ~3,4 cm a 300 dpi, suficiente para um cabeçalho. Se a Fase 4 pedir logo maior, o limite fica numa constante.
 - **`createImageBitmap` em navegadores antigos:** é suportado em todos os navegadores atuais; se falhar, o fallback é `new Image()` + `URL.createObjectURL`.
 - **Exclusão x provas:** depende de a Fase 3 guardar um snapshot do perfil na prova (anotado como premissa para a Fase 3).
+
+## Relatório de implementação
+
+**Data:** 2026-10-01
+**Abordagem:** combinação — TDD para a lógica pura (`profiles`, `logo`) e BDD de fora para dentro para as telas, em Vitest + Testing Library.
+**Resultado:** suíte completa com 76 testes passando (32 anteriores + 44 novos); `npm run lint` e `npm run build` sem erros.
+
+### Matriz de rastreabilidade
+| Item | Descrição (do plano) | Teste(s) | Resultado |
+|---|---|---|---|
+| P1 | `emptyDraft`: ano atual e professora do perfil mais recente | `profiles.test.ts::emptyDraft`; `Perfis.test.tsx::perfil novo começa com o ano atual…` | ✅ |
+| P2 | `validateProfile` exige nome e escola, inclusive só com espaços | `profiles.test.ts::validateProfile`; `Perfis.test.tsx::só espaços…` | ✅ |
+| P3 | `upsertProfile` cria, atualiza sem duplicar e preserva `criadoEm` | `profiles.test.ts::upsertProfile`; `Perfis.test.tsx::editar um perfil altera só ele…` | ✅ |
+| P4 | `deleteProfile` | `profiles.test.ts::deleteProfile` | ✅ |
+| P5 | Ordenação alfabética pt-BR | `profiles.test.ts::sortProfiles`; `Perfis.test.tsx::lista em ordem alfabética` | ✅ |
+| P6 | `getProfiles` com dado ausente ou corrompido | `profiles.test.ts::getProfiles / getProfile` | ✅ |
+| P7 | `fitWithin` reduz sem ampliar | `logo.test.ts::fitWithin` | ✅ |
+| P8 | `processLogo` rejeita tipo e tamanho inválidos | `logo.test.ts::processLogo — validação` | ✅ |
+| P9 | Redimensionamento para 400 px, PNG, erro de leitura | `logo.test.ts::processLogo — redimensionamento` | ✅ |
+| P10 | Estado vazio com botão de cadastro | `Perfis.test.tsx::sem perfis…` | ✅ |
+| P11 | Dois perfis persistem após recarregar | `Perfis.test.tsx::cadastra dois perfis…` | ✅ |
+| P12 | Validação com mensagens, `aria-invalid`, foco, nada gravado | `Perfis.test.tsx::sem nome e escola…` | ✅ |
+| P13 | Logo: miniatura, remover, erro | `Perfis.test.tsx::escolher a logo…`, `::logo inválida…`, `::mostra a logo do perfil no cartão` | ✅ |
+| P14 | Pré-visualização em tempo real | `Perfis.test.tsx::a pré-visualização acompanha…` | ✅ |
+| P15 | Exclusão com confirmação (Cancelar e Esc mantêm) | `Perfis.test.tsx::exclui somente após confirmação…` | ✅ |
+| P16 | `StorageQuotaError` mantém os dados digitados | `Perfis.test.tsx::erro de cota…` | ✅ |
+| P17 | `:id` inexistente | `Perfis.test.tsx::id inexistente…` | ✅ |
+| P18 | Aba "Perfis" entre Início e Configurações, ativa em `/perfis/novo` | `Perfis.test.tsx::Navegação` | ✅ |
+| P19 | Recarregar em `/perfis/:id` abre preenchido | `Perfis.test.tsx::recarregar em /perfis/:id…` | ✅ |
+| P20 | Cancelar sem gravar; seis campos gravados aparados | `Perfis.test.tsx::Cancelar volta…`, `::grava os seis campos…` | ✅ |
+| P21 | Ícones `mais`, `lapis`, `imagem` | uso nas telas + `tsc` | ✅ confirmado pelo usuário |
+| P22 | Upload real (PNG transparente, JPG grande, WebP) | verificação manual | ✅ confirmado pelo usuário |
+| P23 | Celular (~375 px) sem estouro horizontal | verificação manual | ✅ confirmado pelo usuário |
+
+### Desvios aprovados
+Nenhum desvio de escopo ou arquitetura. Detalhes de execução não previstos no plano:
+- O erro de um campo some quando a professora digita nele.
+- "Salvar perfil" fica desabilitado enquanto a logo é processada.
+- Foram criados `listProfiles` e `sortProfiles` em `profiles.ts`, para as telas tolerarem dado corrompido.

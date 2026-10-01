@@ -5,6 +5,7 @@ import logoPms from "../images/logo-pms-bco.png";
 // Cada seção do app é uma divisória do fichário; a ativa se emenda à folha e leva o grifo de marca-texto.
 const abas = [
   { to: "/", label: "Início" },
+  { to: "/perfis", label: "Perfis" },
   { to: "/configuracoes", label: "Configurações" },
 ];
 
@@ -27,7 +28,7 @@ export default function Layout() {
             <NavLink
               key={a.to}
               to={a.to}
-              end
+              end={a.to === "/"}
               className={({ isActive }) =>
                 [
                   "relative border-2 border-tinta px-4 py-2.5 font-display font-bold whitespace-nowrap",

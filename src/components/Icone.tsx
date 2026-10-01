@@ -49,6 +49,20 @@ const paths = {
       <path d="M18 14v7H3V6h7" />
     </>
   ),
+  mais: <path d="M12 4v16M4 12h16" />,
+  lapis: (
+    <>
+      <path d="m4 20 1-5L16 4l4 4L9 19Z" />
+      <path d="m13 7 4 4" />
+    </>
+  ),
+  imagem: (
+    <>
+      <path d="M3 4h18v16H3Z" />
+      <path d="m3 17 5-5 4 4 3-3 6 6" />
+      <path d="M8 7.5h2v2H8Z" />
+    </>
+  ),
 } as const
 
 export type NomeIcone = keyof typeof paths
