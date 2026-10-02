@@ -82,6 +82,18 @@ describe('Prova — cabeçalho institucional', () => {
     }
   })
 
+  it('Então Turma, Data e Nota ficam numa faixa própria, separada da faixa Aluno(a)/Nº', () => {
+    semear()
+    renderProva()
+    const cab = within(screen.getByRole('article', { name: 'Prova' })).getByRole('banner')
+    const faixa = (rotulo: string) => within(cab).getByText(rotulo).parentElement!.parentElement!
+    expect(faixa('Aluno(a)')).toBe(faixa('Nº'))
+    expect(faixa('Turma')).toBe(faixa('Data'))
+    expect(faixa('Turma')).toBe(faixa('Nota'))
+    expect(faixa('Turma')).not.toBe(faixa('Aluno(a)'))
+    expect(faixa('Turma')).toHaveClass('border-t-2')
+  })
+
   it('Dado um perfil sem logo, então não renderiza imagem nem placeholder', () => {
     semear(prova({}, { logo: '', secretaria: '' }))
     renderProva()
@@ -782,5 +794,75 @@ describe('Prova — regerar com outra IA (copiar e colar)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Descartar' }))
     await entrarEmEdicao()
     expect(screen.queryByRole('region', { name: /com outra IA/ })).not.toBeInTheDocument()
+  })
+})
+
+describe('Prova — colunas da folha', () => {
+  const lerExame = () => (JSON.parse(localStorage.getItem('provario:exams')!) as ExamsData).provas[0]
+  const seletor = () => screen.getByRole('group', { name: 'Colunas da folha' })
+
+  it('Dada uma prova sem colunas, então marca "1 coluna" e a folha tem data-colunas="1"', () => {
+    semear()
+    renderProva()
+    expect(within(seletor()).getByRole('radio', { name: '1 coluna' })).toBeChecked()
+    expect(within(seletor()).getByRole('radio', { name: '2 colunas' })).not.toBeChecked()
+    const folha = screen.getByRole('article', { name: 'Prova' })
+    expect(folha).toHaveAttribute('data-colunas', '1')
+    expect(within(folha).getByRole('list', { name: 'Questões' })).not.toHaveClass('print:columns-2')
+  })
+
+  it('Quando escolhe "2 colunas", então grava, atualiza atualizadoEm e a lista ganha as classes de duas colunas', async () => {
+    semear()
+    renderProva()
+    await userEvent.click(within(seletor()).getByRole('radio', { name: '2 colunas' }))
+
+    const salvo = lerExame()
+    expect(salvo.colunas).toBe(2)
+    expect(salvo.atualizadoEm).not.toBe('2026-03-10T10:00:00.000Z')
+    const folha = screen.getByRole('article', { name: 'Prova' })
+    expect(folha).toHaveAttribute('data-colunas', '2')
+    const lista = within(folha).getByRole('list', { name: 'Questões' })
+    expect(lista).toHaveClass('sm:columns-2', 'print:columns-2')
+    expect(within(seletor()).getByRole('radio', { name: '2 colunas' })).toBeChecked()
+    for (const li of within(lista).getAllByRole('listitem').filter((l) => l.parentElement === lista)) {
+      expect(li).toHaveClass('break-inside-avoid')
+    }
+  })
+
+  it('Quando volta para "1 coluna", então grava colunas: 1', async () => {
+    semear(prova({ colunas: 2 }))
+    renderProva()
+    await userEvent.click(within(seletor()).getByRole('radio', { name: '1 coluna' }))
+    expect(lerExame().colunas).toBe(1)
+    expect(screen.getByRole('article', { name: 'Prova' })).toHaveAttribute('data-colunas', '1')
+  })
+
+  it('Durante a edição, o seletor fica desabilitado', async () => {
+    semear()
+    renderProva()
+    await userEvent.click(screen.getByRole('button', { name: 'Editar prova' }))
+    expect(seletor()).toBeDisabled()
+  })
+
+  it('Com o armazenamento cheio, a troca mostra o erro e não grava', async () => {
+    semear()
+    renderProva()
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('cheio', 'QuotaExceededError')
+    })
+    await userEvent.click(within(seletor()).getByRole('radio', { name: '2 colunas' }))
+    setItem.mockRestore()
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/armazenamento do navegador está cheio/)
+    expect(lerExame().colunas).toBeUndefined()
+    expect(screen.getByRole('article', { name: 'Prova' })).toHaveAttribute('data-colunas', '1')
+  })
+
+  it('O gabarito não muda com duas colunas', () => {
+    semear(prova({ colunas: 2 }))
+    renderProva()
+    const gabarito = screen.getByRole('region', { name: /Gabarito/ })
+    expect(gabarito.className).not.toMatch(/columns-/)
+    expect(within(gabarito).getAllByRole('listitem')).toHaveLength(5)
   })
 })

@@ -1,20 +1,29 @@
-import { letraAlternativa, linhaIdentificacao, type Exam } from '../lib/exams'
+import { colunasDaFolha, letraAlternativa, linhaIdentificacao, type Exam } from '../lib/exams'
 
 /** Folha A4 da prova: cabeçalho institucional, questões e, em página separada, o gabarito. Só renderiza. */
 export default function FolhaProva({ prova }: { prova: Exam }) {
+  const duas = colunasDaFolha(prova) === 2
   return (
     <div className="space-y-6 print:space-y-0">
       <article
         aria-label="Prova"
+        data-colunas={duas ? 2 : 1}
         className="border-2 border-tinta bg-white p-4 shadow-relevo-sm sm:p-8 print:border-0 print:p-0 print:shadow-none"
       >
         <CabecalhoProva prova={prova} />
         <h2 className="mt-6 text-center text-xl font-black tracking-wide break-after-avoid uppercase sm:text-2xl">
           {prova.titulo}
         </h2>
-        <ol aria-label="Questões" className="mt-6 space-y-5">
+        <ol
+          aria-label="Questões"
+          className={
+            duas
+              ? 'mt-6 gap-x-8 [column-rule:1px_solid_var(--color-tinta)] sm:columns-2 print:columns-2'
+              : 'mt-6 space-y-5'
+          }
+        >
           {prova.questoes.map((q, i) => (
-            <li key={i} className="break-inside-avoid">
+            <li key={i} className={`break-inside-avoid ${duas ? 'mb-4' : ''}`}>
               <p className="font-semibold wrap-break-word">
                 {i + 1}. {q.enunciado}
               </p>
@@ -61,9 +70,11 @@ function CabecalhoProva({ prova }: { prova: Exam }) {
       <div className="grid border-t-2 border-tinta sm:grid-cols-4">
         <Campo rotulo="Aluno(a)" className="sm:col-span-3" />
         <Campo rotulo="Nº" className="sm:border-l-2" />
-        <Campo rotulo="Turma" className="border-t-2" />
-        <Campo rotulo="Data" className="border-t-2 sm:border-l-2" />
-        <Campo rotulo="Nota" className="border-t-2 sm:border-l-2" />
+      </div>
+      <div className="grid border-t-2 border-tinta sm:grid-cols-3">
+        <Campo rotulo="Turma" />
+        <Campo rotulo="Data" className="border-t-2 sm:border-t-0 sm:border-l-2" />
+        <Campo rotulo="Nota" className="border-t-2 sm:border-t-0 sm:border-l-2" />
       </div>
     </header>
   )

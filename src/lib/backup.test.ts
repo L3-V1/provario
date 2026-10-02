@@ -244,6 +244,25 @@ describe('mergeById', () => {
   })
 })
 
+describe('colunas da folha no backup', () => {
+  it('aceita prova sem colunas e prova com colunas: 2, preservando o valor', () => {
+    const b = backup([], [prova({ id: 'a' }), prova({ id: 'b', colunas: 2 })])
+    const r = parseBackup(JSON.stringify(b))
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.backup.provas[0].colunas).toBeUndefined()
+    expect(r.backup.provas[1].colunas).toBe(2)
+  })
+
+  it('applyBackup preserva colunas ao substituir e ao mesclar', () => {
+    const b = backup([], [prova({ id: 'b', colunas: 2 })])
+    for (const modo of ['substituir', 'mesclar'] as const) {
+      const r = applyBackup(modo, { perfis: null, provas: null }, b)
+      expect(r.dados.provas.provas[0].colunas).toBe(2)
+    }
+  })
+})
+
 describe('applyBackup', () => {
   const atualPerfis = perfisData(perfil({ id: 'x', nome: 'Atual' }))
   const atualProvas = provasData(prova({ id: 'ex' }))

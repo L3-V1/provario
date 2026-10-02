@@ -9,6 +9,7 @@ import Icone from '../components/Icone'
 import ModoManual from '../components/ModoManual'
 import { idAlternativa, idCorreta, idEnunciado } from '../components/idsEditor'
 import {
+  colunasDaFolha,
   DEFAULT_EXAMS,
   EXAMS_KEY,
   listExams,
@@ -19,7 +20,9 @@ import {
   rotuloDificuldade,
   updateExam,
   validateQuestions,
+  withColunas,
   withEdits,
+  type ColunasFolha,
   type ExamsData,
   type Question,
   type QuestionErrors,
@@ -65,6 +68,7 @@ export default function Prova() {
   const [erros, setErros] = useState<QuestionErrors>({})
   const [erroSalvar, setErroSalvar] = useState<string | null>(null)
   const [salvo, setSalvo] = useState(false)
+  const [erroColunas, setErroColunas] = useState<string | null>(null)
   const [regerando, setRegerando] = useState<number | null>(null)
   const [erroRegerar, setErroRegerar] = useState<{ indice: number; mensagem: string } | null>(null)
   // Questão com o painel do modo manual (copiar e colar) aberto.
@@ -166,6 +170,17 @@ export default function Prova() {
     }
     sairDaEdicao()
     setSalvo(true)
+  }
+
+  function trocarColunas(colunas: ColunasFolha) {
+    setErroColunas(null)
+    try {
+      const atual = readItem(EXAMS_KEY, DEFAULT_EXAMS)
+      writeItem<ExamsData>(EXAMS_KEY, updateExam(atual, withColunas(prova!, colunas)))
+    } catch (err) {
+      if (!(err instanceof StorageQuotaError)) throw err
+      setErroColunas(MSG_ARMAZENAMENTO_CHEIO)
+    }
   }
 
   function alterar(i: number, questao: Question) {
@@ -300,6 +315,24 @@ export default function Prova() {
               <Icone nome="impressora" />
               Imprimir / Salvar PDF
             </button>
+            <fieldset disabled={editando} className="flex items-center gap-2 disabled:opacity-50">
+              <legend className="sr-only">Colunas da folha</legend>
+              {([1, 2] as const).map((n) => (
+                <label
+                  key={n}
+                  className="cursor-pointer border-2 border-tinta bg-white px-3 py-1.5 font-bold shadow-relevo-sm has-checked:bg-santos has-checked:text-white has-focus-visible:outline-3 has-focus-visible:outline-offset-2 has-focus-visible:outline-santos"
+                >
+                  <input
+                    type="radio"
+                    name="colunas-folha"
+                    className="sr-only"
+                    checked={colunasDaFolha(prova) === n}
+                    onChange={() => trocarColunas(n)}
+                  />
+                  {n === 1 ? '1 coluna' : '2 colunas'}
+                </label>
+              ))}
+            </fieldset>
             <Link to="/provas/nova" className="btn btn-secundario">
               <Icone nome="faisca" />
               Gerar outra prova
@@ -325,6 +358,7 @@ export default function Prova() {
             Você também pode regerar com outra IA (copiar e colar).
           </Aviso>
         )}
+        {erroColunas && <Aviso tipo="erro">{erroColunas}</Aviso>}
         {erroSalvar && <Aviso tipo="erro">{erroSalvar}</Aviso>}
         {erroRegerar && (
           <Aviso tipo="erro">

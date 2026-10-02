@@ -166,6 +166,11 @@ Uma professora de Ciências do Ensino Fundamental II da rede pública de Santos 
 - Quando o Gemini falha, a professora espera no máximo cerca de 60 s e recebe a oferta do modo manual
 **Pendências:** resolvidas no plano da fase: reserva `gemini-3.5-flash-lite` (confirmado em 01/10/2026), prazo total de 60 s (até ~35 s no modelo principal) e links para ChatGPT, Claude e Gemini em nova aba ao lado do prompt
 
+## Fase 8 — Ajustes de interface e folha em duas colunas
+**Status:** concluída
+**Objetivo:** Pequenos ajustes pedidos após o uso: cabeçalho da prova com a linha completa, verde principal mais claro e opção de imprimir as questões em duas colunas para caber numa folha.
+**Plano:** `docs/plans/fase-8-ajustes-de-interface-e-duas-colunas.md`
+
 ## Evolução futura
 - Upload manual de imagem por questão
 - Versões A/B com questões embaralhadas e gabaritos próprios

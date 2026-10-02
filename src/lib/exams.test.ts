@@ -19,6 +19,8 @@ import {
   updateExam,
   validateQuestions,
   withEdits,
+  withColunas,
+  colunasDaFolha,
   sortExams,
   deleteExam,
   duplicateExam,
@@ -367,6 +369,32 @@ describe('withEdits', () => {
   })
 })
 
+describe('colunasDaFolha', () => {
+  const base = provaMinima('a')
+  it('prova antiga, sem o campo, abre em 1 coluna', () => {
+    expect(colunasDaFolha(base)).toBe(1)
+  })
+  it('respeita 1 e 2', () => {
+    expect(colunasDaFolha({ ...base, colunas: 1 })).toBe(1)
+    expect(colunasDaFolha({ ...base, colunas: 2 })).toBe(2)
+  })
+  it('valor inválido vira 1', () => {
+    expect(colunasDaFolha({ ...base, colunas: 3 as never })).toBe(1)
+    expect(colunasDaFolha({ ...base, colunas: '2' as never })).toBe(1)
+  })
+})
+
+describe('withColunas', () => {
+  it('troca as colunas e renova atualizadoEm sem tocar no resto', () => {
+    const original = { ...provaMinima('a'), criadoEm: '2026-01-01T00:00:00.000Z', atualizadoEm: '2026-01-01T00:00:00.000Z' }
+    const nova = withColunas(original, 2)
+    expect(nova.colunas).toBe(2)
+    expect(nova.atualizadoEm).not.toBe(original.atualizadoEm)
+    expect({ ...nova, colunas: undefined, atualizadoEm: '' }).toEqual({ ...original, colunas: undefined, atualizadoEm: '' })
+    expect(original.colunas).toBeUndefined()
+  })
+})
+
 describe('sortExams', () => {
   it('ordena por criadoEm decrescente, sem mutar a lista', () => {
     const a = { ...provaMinima('a'), criadoEm: '2026-01-01T00:00:00.000Z' }
@@ -400,6 +428,10 @@ describe('duplicateExam', () => {
     expect(copia.titulo).toBe('Células (cópia)')
     expect(copia.criadoEm).toBe(agora)
     expect(copia.atualizadoEm).toBe(agora)
+  })
+
+  it('preserva as colunas da folha', () => {
+    expect(duplicateExam({ ...original, colunas: 2 }, agora, 'x').colunas).toBe(2)
   })
 
   it('usa um id aleatório quando não informado', () => {

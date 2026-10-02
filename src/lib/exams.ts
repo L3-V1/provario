@@ -41,6 +41,8 @@ export interface Exam {
   perfil: Omit<Profile, 'criadoEm' | 'atualizadoEm'>
   questoes: Question[]
   modelo: string
+  /** Colunas da folha; ausente (provas antigas) equivale a 1. Leia por `colunasDaFolha`. */
+  colunas?: ColunasFolha
   /** ISO 8601 */
   criadoEm: string
   atualizadoEm: string
@@ -88,6 +90,19 @@ export function addExam(data: ExamsData, exam: Exam): ExamsData {
 /** Substitui a prova de mesmo `id`; as outras ficam como estão. */
 export function updateExam(data: ExamsData, exam: Exam): ExamsData {
   return { version: 1, provas: listExams(data).map((p) => (p.id === exam.id ? exam : p)) }
+}
+
+/** Colunas da folha impressa: escolha de diagramação, não parâmetro de geração. */
+export type ColunasFolha = 1 | 2
+
+/** Colunas da folha da prova; ausente ou inválido equivale a 1 (provas e backups antigos). */
+export function colunasDaFolha(exam: Exam): ColunasFolha {
+  return exam.colunas === 2 ? 2 : 1
+}
+
+/** A prova com outra diagramação de colunas e `atualizadoEm` de agora. */
+export function withColunas(exam: Exam, colunas: ColunasFolha): Exam {
+  return { ...exam, colunas, atualizadoEm: new Date().toISOString() }
 }
 
 /** A prova com novo título e novas questões e `atualizadoEm` de agora. */
